@@ -56,4 +56,4 @@ class ImageDataset(Dataset):
             clean_img = T.functional.hflip(clean_img)
             degra_img = T.functional.hflip(degra_img)
 
-        return clean_img, degraded_img
+        return clean_img, degra_img
