@@ -2,15 +2,17 @@ import torch
 import torch.nn as nn 
 import os 
 import random 
-from torch.utils.data import Dataset, Dataloader
+from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms as T 
 from glob import glob 
 from PIL import Image 
+import configs
 
 class ImageDataset(Dataset): 
+
     """
     """
-    def __init__(self, clean_dir, degradation_dirs, patch_size, transforms, v_threshold, h_threshold): 
+    def __init__(self, clean_dir, degradation_dirs, patch_size, transforms, v_threshold, h_threshold, mode): 
         self.clean_dir = sorted(glob(os.path.join(clean_dir, "/*")))
         self.degra_dir = sorted(glob(os.path.join(degradation_dirs, "/*")))
         self.patch_size = patch_size
@@ -21,10 +23,15 @@ class ImageDataset(Dataset):
         if transforms: 
             self.transforms = transforms
         else: 
-            self.transforms = T.Compose([
-                T.ToTensor(), 
-                T.Normalize(mean=[0.427, 0.442, 0.384], std=[0.225, 0.240, 0.248])
-            ])
+            if mode == "train": 
+                self.transforms = T.Compose([T.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
+                                             T.ToTensor(), 
+                                             T.Normalize(mean = [], std = [])])
+            elif mode == "val":
+                self.transforms = T.Compose([T.ToTensor(), 
+                                             T.Normalize(mean = [], std = [])])
+            else: 
+                raise ValueError(f"[ERROR] {mode} is an invalid mode.")
     
     def __len__(self): 
         """
@@ -57,3 +64,16 @@ class ImageDataset(Dataset):
             degra_img = T.functional.hflip(degra_img)
 
         return clean_img, degra_img
+    
+    def load_dataset(batch_size, shuffle, mode):
+        """
+        """
+        assert mode in ["train", "val", "test"], "[ERROR] Invalid dataset mode"
+        dataset = ImageDataset(clean_dir=configs.clean_dir, 
+                               degradation_dirs=configs.degradation_dir, 
+                               patch_size=configs.patch_size, 
+                               v_threshold=0.25, 
+                               h_threshold=0.25, 
+                               mode=mode)
+        
+        return DataLoader(dataset=dataset, batch_size=batch_size, shuffle=shuffle, drop_last=False)
