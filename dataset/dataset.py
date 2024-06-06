@@ -9,7 +9,6 @@ from PIL import Image
 import configs
 
 class ImageDataset(Dataset): 
-
     """
     """
     def __init__(self, clean_dir, degradation_dirs, patch_size, transforms, v_threshold, h_threshold, mode): 
