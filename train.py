@@ -26,7 +26,7 @@ def valid_step(model, criterion, data, criterion_psnr):
 
     return loss.item(), psnr.item()
 
-def train(model, criterion, criterion_psnr, train_dl, valid_dl, optimizer, scheduler, epochs): 
+def train(model, criterion, criterion_psnr, train_dl, valid_dl, optimizer, scheduler, epochs, log_writer): 
     """
     """
     best_loss = float("inf")
@@ -61,9 +61,12 @@ def train(model, criterion, criterion_psnr, train_dl, valid_dl, optimizer, sched
         if epoch > configs.warm_up_phase: 
             scheduler.step()
 
+        log_writer.write(epoch=epoch, tr_loss = avg_train_loss, vl_loss = avg_valid_loss, vl_psnr = avg_valid_psnr)
+
 def main(): 
     """
     """
+    configs.main()
 
 if __name__ == "__main__": 
     main()
