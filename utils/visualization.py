@@ -29,9 +29,9 @@ def add_gaussian_noise(image_path : str, mean : int, std : int, output_directory
     image = cv2.add(image, gaussian_noise)
     
     if show: 
-            cv2.imshow(image)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
+        cv2.imshow(image)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
     if output_directory:
         cv2.imwrite(output_directory,image)
