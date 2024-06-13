@@ -51,8 +51,7 @@ class SSIM(nn.Module):
         for x, y in zip(x_tensors, y_tensors):
             SSIM_values += self.channel_calculation(x, y)
         
-        return 1 - SSIM_values / len(x_tensors)
-        
+        return 1 - SSIM_values / len(x_tensors) 
     
 class GradientPriorLoss(nn.Module):
     def __init__(self):
