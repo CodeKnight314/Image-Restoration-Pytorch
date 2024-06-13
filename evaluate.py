@@ -23,9 +23,6 @@ def evaluate(model, test_loader, criterion, crtierion_psnr, criterion_ssim):
 
     avg_loss = total_loss / len(test_loader)
     avg_psnr_loss = total_psnr_loss / len(test_loader)
-    avg_ssim_loss = total_ssim_loss / len(test_loader)
-
-
-        
+    avg_ssim_loss = total_ssim_loss / len(test_loader)    
 
         
