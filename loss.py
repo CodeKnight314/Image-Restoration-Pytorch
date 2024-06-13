@@ -13,11 +13,46 @@ class PSNR(nn.Module):
         return 10 * torch.log10(self.max_value ** 2 / mse_loss)
 
 class SSIM(nn.Module):
-    def __init__(self):
+    def __init__(self, constants = (0.0001, 0.0001)):
         super().__init__() 
+
+        self.C1 = constants[0]
+        self.C2 = constants[1]
+
+    def channel_calculation(self, x, y):
+        mean_x = torch.mean(x)
+        mean_y = torch.mean(y)
+        
+        variance_x = torch.var(x, unbiased=False)
+        variance_y = torch.var(y, unbiased=False)
+        
+        covariance_xy = torch.mean((x - mean_x) * (y - mean_y))
+        
+        SSIM = ((2 * mean_x * mean_y + self.C1) * (2 * covariance_xy + self.C2)) / ((mean_x ** 2 + mean_y ** 2 + self.C1) * (variance_x + variance_y + self.C2))
+        
+        return SSIM
     
-    def forward(self, x): 
-        return x
+    def channel_splits(self, x, y):
+        assert x.shape[1] == y.shape[1], "[ERROR] X and Y have different number of channels."
+
+        x_tensors = []
+        y_tensors = []
+
+        for i in range(x.shape[1]+1):
+            x_tensors.append(x[:, i, :, :])
+            y_tensors.append(y[:, i, :, :])
+        
+        return x_tensors, y_tensors
+    
+    def forward(self, clean_img, sr_img):
+        x_tensors, y_tensors = self.channel_splits(clean_img, sr_img)
+
+        SSIM_values = 0.0
+        for x, y in zip(x_tensors, y_tensors):
+            SSIM_values += self.channel_calculation(x, y)
+        
+        return 1 - SSIM_values / len(x_tensors)
+        
     
 class GradientPriorLoss(nn.Module):
     def __init__(self):
