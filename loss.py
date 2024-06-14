@@ -9,6 +9,8 @@ class PSNR(nn.Module):
         self.max_value = maximum_pixel_value
 
     def forward(self, clean_img, sr_img): 
+        """
+        """
         mse_loss = self.me_loss(clean_img, sr_img) 
         return 10 * torch.log10(self.max_value ** 2 / mse_loss)
 
@@ -33,6 +35,8 @@ class SSIM(nn.Module):
         return SSIM
     
     def channel_splits(self, x, y):
+        """
+        """
         assert x.shape[1] == y.shape[1], "[ERROR] X and Y have different number of channels."
 
         x_tensors = []
@@ -45,6 +49,8 @@ class SSIM(nn.Module):
         return x_tensors, y_tensors
     
     def forward(self, clean_img, sr_img):
+        """
+        """
         x_tensors, y_tensors = self.channel_splits(clean_img, sr_img)
 
         SSIM_values = 0.0
@@ -59,11 +65,15 @@ class GradientPriorLoss(nn.Module):
         self.func = nn.L1Loss()
 
     def forward(self, clean_img, sr_img):
+        """
+        """
         map_clean= self.gradient_map(clean_img)
         map_sr = self.gradient_map(sr_img)
         return self.func(map_clean, map_sr)
 
     def gradient_map(self, x):
+        """
+        """
         _, _, h_x, w_x = x.size()
 
         r = F.pad(x, (0, 1, 0, 0))[:, :, :, 1:] 

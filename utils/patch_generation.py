@@ -5,7 +5,8 @@ from glob import glob
 from tqdm import tqdm
 
 def patch_generation(image_directory, output_directory, patch_width, patch_height, stride): 
-
+    """
+    """
     if not os.path.exists(output_directory): 
         os.makedirs(output_directory)
 
