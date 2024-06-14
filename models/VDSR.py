@@ -18,7 +18,7 @@ class VDSR(nn.Module):
         self.feature_recontruction = nn.Sequential(nn.Conv2d(64, output_channels, kernel_size=3, stride=1, padding=1), nn.ReLU())
 
     def forward(self, x): 
-        return self.feature_recontruction(self.cnn_backbone(self.feature_extraction(x)))
+        return x + self.feature_recontruction(self.cnn_backbone(self.feature_extraction(x)))
     
     def weight_initialization(self): 
         for module in self.modules(): 
