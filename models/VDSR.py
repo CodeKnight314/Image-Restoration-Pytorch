@@ -1,4 +1,5 @@
 import torch 
+import math
 import torch.nn as nn 
 
 class VDSR(nn.Module): 
@@ -18,6 +19,15 @@ class VDSR(nn.Module):
 
     def forward(self, x): 
         return self.feature_recontruction(self.cnn_backbone(self.feature_extraction(x)))
+    
+    def weight_initialization(self): 
+        for module in self.modules(): 
+            if isinstance(module, nn.Conv2d):
+                nn.init.normal_(module.weight.data, 0.0, math.sqrt(2 / (module.out_channels * module.weight.data[0][0].numel())))
+                nn.init.zeros_(module.bias.data)
+
+        nn.init.normal_(self.reconstruction.weight.data, 0.0, 0.001)
+        nn.init.zeros_(self.reconstruction.bias.data)
     
 def get_VDSR(input_channels, output_channels, num_layers): 
     return VDSR(input_channels=input_channels, output_channels=output_channels, num_layers=num_layers)
