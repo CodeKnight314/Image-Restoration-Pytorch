@@ -35,4 +35,6 @@ class SRCNN(nn.Module):
         nn.init.zeros_(self.reconstruction.bias.data)
 
 def get_SRCNN(input_channels = 3, hidden_channels = [64, 32], output_channels = 3):
+    """
+    """
     return SRCNN(input_channels=input_channels, hidden_channels=hidden_channels, output_channels=output_channels).to(configs.device)
