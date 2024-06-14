@@ -30,4 +30,6 @@ class VDSR(nn.Module):
         nn.init.zeros_(self.reconstruction.bias.data)
     
 def get_VDSR(input_channels, output_channels, num_layers): 
+    """
+    """
     return VDSR(input_channels=input_channels, output_channels=output_channels, num_layers=num_layers)
