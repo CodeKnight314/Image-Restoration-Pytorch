@@ -1,5 +1,6 @@
 import torch 
 import torch.nn as nn 
+from utils.complexity_measure import * 
 
 class ResBlock(nn.Module): 
     def __init__(self, channels, residual_scaler): 
@@ -69,7 +70,7 @@ class EDSR_MultiScale(nn.Module):
 
         self.feature_reconstruction = nn.Conv2d(residual_channels, output_channels, kernel_size=3, stride=1, padding=1)
 
-    def forward(self, x, scale_factor): 
+    def forward(self, x, scale_factor=2): 
         fe_output = self.feature_extraction(x)
         res_output = self.res_backbone(fe_output)
 
@@ -92,4 +93,16 @@ def get_MDSR(input_channels = 3, residual_channels = 64, output_channels = 3, nu
     """
     """
     return EDSR_MultiScale(input_channels=input_channels, residual_channels=residual_channels, output_channels=output_channels, num_resblocks=num_resblocks)
+
+if __name__ == "__main__": 
+    sdsr = get_EDSR()  
+    mdsr = get_MDSR()
+
+    input_size = (1, 3, 256, 256)
+
+    sdsr_gflops = count_model_flops(sdsr, input_size=input_size)
+    mdsr_gflops = count_model_flops(mdsr, input_size=input_size)
+
+    print(f"[INFO] SDSR GFLOPs: {sdsr_gflops}")
+    print(f"[INFO] MDSR GFLOPS: {mdsr_gflops}")
 
