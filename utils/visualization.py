@@ -164,23 +164,32 @@ def count_labels(directory):
 
 def plot_data(output_log, output_directory, save_fig, show_fig): 
     """
+    Plots training and validation loss and accuracy over epochs from a log file.
+
+    Args:
+        output_log (str): The path to the log file containing the training data.
+        output_directory (str): The directory where the plots will be saved if `save_fig` is True.
+        save_fig (bool): Whether to save the plots to the output directory.
+        show_fig (bool): Whether to display the plots.
+
     """
-    file = open(output_log, 'r').split("\n")
+    with open(output_log, 'r') as file:
+        lines = file.readlines()
 
     tr_loss_ls = []
     val_loss_ls = []
     accuracy_ls = []
      
-    for i in range(len(file)):
-        line = file[i].split(" ")
-
-        tr_loss_ls.append(line[4])
-        val_loss_ls.append(line[8])
-        accuracy_ls.append(line[12])
+    for line in lines:
+        parts = line.split(" ")
+        if len(parts) > 12:  # Ensure the line has enough parts
+            tr_loss_ls.append(float(parts[4]))
+            val_loss_ls.append(float(parts[8]))
+            accuracy_ls.append(float(parts[12]))
     
     plt.figure(figsize=(10, 6))
-    plt.plot([i for i in range(1, len(tr_loss_ls) + 1)], tr_loss_ls, label="Training Loss")
-    plt.plot([i for i in range(1, len(val_loss_ls) + 1)], val_loss_ls, label="Validation loss")
+    plt.plot(range(1, len(tr_loss_ls) + 1), tr_loss_ls, label="Training Loss")
+    plt.plot(range(1, len(val_loss_ls) + 1), val_loss_ls, label="Validation Loss")
     plt.title("Training and Validation Loss over Epochs")
     plt.xlabel("Epochs")
     plt.ylabel("Loss")
@@ -195,7 +204,7 @@ def plot_data(output_log, output_directory, save_fig, show_fig):
     plt.close() 
 
     plt.figure(figsize=(10, 6))
-    plt.plot([i for i in range(1, len(accuracy_ls) + 1)], accuracy_ls, label="Accuracy")
+    plt.plot(range(1, len(accuracy_ls) + 1), accuracy_ls, label="Accuracy")
     plt.title("Accuracy over Epochs")
     plt.xlabel("Epochs")
     plt.ylabel("Accuracy")
