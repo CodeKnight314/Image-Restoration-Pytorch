@@ -29,7 +29,7 @@ class VDSR(nn.Module):
         nn.init.normal_(self.reconstruction.weight.data, 0.0, 0.001)
         nn.init.zeros_(self.reconstruction.bias.data)
     
-def get_VDSR(input_channels, output_channels, num_layers): 
+def get_VDSR(input_channels=3, output_channels=3, num_layers=6): 
     """
     """
     return VDSR(input_channels=input_channels, output_channels=output_channels, num_layers=num_layers)

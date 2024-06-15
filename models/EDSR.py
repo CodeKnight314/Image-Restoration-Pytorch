@@ -45,5 +45,7 @@ class EDSR_SingleScale(nn.Module):
         return x + fc_output
     
 def get_EDSR(input_channels = 3, residual_channels = 64, output_channels = 3, num_resblocks = 16, up_scale_factor = 2): 
+    """
+    """
     return EDSR_SingleScale(input_channels=input_channels, residual_channels=residual_channels, output_channels=output_channels, num_resblocks=num_resblocks, upscale_factor=up_scale_factor)
 
