@@ -3,33 +3,36 @@ import torch.nn as nn
 import configs 
 import os
 
-class EarlyStopMechanism():
-    def __init__(self, metric_threshold, mode, grace_threshold):
-        self.metric_threshold = metric_threshold 
+class EarlyStopMechanism:
+    def __init__(self, metric_threshold, mode='min', grace_threshold=10, save_path='checkpoints'):
+        self.metric_threshold = metric_threshold
         self.mode = mode
-        self.grace_threhold = grace_threshold
+        self.grace_threshold = grace_threshold
+        self.save_path = save_path
 
-        self.best_loss = float("inf")
+        self.best_metric = float("inf") if mode == 'min' else float("-inf")
         self.best_iteration = 0
-
-        self.current_loss = 0.0
         self.current_iteration = 0
 
-    def step(self, model, loss):
-        self.current_loss = loss 
-        if self.current_loss < self.best_loss - self.metric_threshold:
-            self.best_loss = self.current_loss
-            self.best_iteration = self.current_iteration 
+    def step(self, model, metric):
+        self.current_iteration += 1
+        improve_condition = (metric < self.best_metric - self.metric_threshold) if self.mode == 'min' else (metric > self.best_metric + self.metric_threshold)
+        
+        if improve_condition:
+            self.best_metric = metric
+            self.best_iteration = self.current_iteration
             self.save_model(model)
-        self.current_iteration+=1
 
-    def save_model(self, model : nn.Module):
-        torch.save(model.state_dict(), 
-                   os.path.join(configs.save_pth, f"Epoch_{self.current_iteration}_best_model.pth"))
-    
-    def check(self, model):
-        if self.current_iteration - self.best_iteration >= self.grace_threhold:
-            print(f"[INFO] Early Stopping Mechanism engaged. Last loss update was Epoch {self.best_iteration+1}")
+    def save_model(self, model: nn.Module):
+        torch.save(model.state_dict(), os.path.join(self.save_path, f"Epoch_{self.current_iteration}_best_model.pth"))
+
+    def check(self):
+        if self.current_iteration - self.best_iteration >= self.grace_threshold:
+            print(f"[INFO] Early Stopping Mechanism engaged. Last improvement was at Epoch {self.best_iteration}.")
             return True
-        else: 
-            return False
+        return False
+
+    def reset(self):
+        self.best_metric = float("inf") if self.mode == 'min' else float("-inf")
+        self.best_iteration = 0
+        self.current_iteration = 0
