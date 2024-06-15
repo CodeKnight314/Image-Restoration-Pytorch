@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn 
 import math 
 import configs
+from utils.complexity_measure import * 
 
 class SRCNN(nn.Module):
     def __init__(self, input_channels, hidden_channels, output_channels):
@@ -38,3 +39,12 @@ def get_SRCNN(input_channels = 3, hidden_channels = [64, 32], output_channels = 
     """
     """
     return SRCNN(input_channels=input_channels, hidden_channels=hidden_channels, output_channels=output_channels).to(configs.device)
+
+if __name__ == "__main__":  
+    srcnn = get_SRCNN()
+
+    input_size = (1, 3, 256, 256)
+    
+    srcnn_gflops = count_model_flops(srcnn, input_size=input_size)
+
+    print(f"[INFO] SRCNN GFLOPS: {srcnn_gflops}")

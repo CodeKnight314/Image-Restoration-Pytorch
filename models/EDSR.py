@@ -105,4 +105,3 @@ if __name__ == "__main__":
 
     print(f"[INFO] SDSR GFLOPs: {sdsr_gflops}")
     print(f"[INFO] MDSR GFLOPS: {mdsr_gflops}")
-
