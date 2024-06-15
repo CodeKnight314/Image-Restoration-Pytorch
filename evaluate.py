@@ -2,8 +2,9 @@ import torch
 import torch.nn as nn 
 from utils.log_writer import LOGWRITER
 from tqdm import tqdm
+import configs
 
-def evaluate(model, test_loader, criterion, crtierion_psnr, criterion_ssim): 
+def evaluate(model, test_loader, criterion, crtierion_psnr, criterion_ssim, log_writer : LOGWRITER): 
     model.eval() 
     
     total_loss = 0.0 
@@ -21,8 +22,23 @@ def evaluate(model, test_loader, criterion, crtierion_psnr, criterion_ssim):
             psnr = crtierion_psnr(clean_img, sr_img)
             ssim = criterion_ssim(clean_img, sr_img)
 
+            total_loss+=loss
+            total_psnr_loss+=psnr
+            total_ssim_loss+=ssim
+
     avg_loss = total_loss / len(test_loader)
     avg_psnr_loss = total_psnr_loss / len(test_loader)
     avg_ssim_loss = total_ssim_loss / len(test_loader)    
+
+    log_writer.write(epoch=0, avg_loss = avg_loss, avg_psnr_loss=avg_psnr_loss, avg_ssim_loss=avg_ssim_loss)
+    
+def main(): 
+    """
+    """
+    configs.main() 
+
+if __name__ == "__main__":
+    main()
+
 
         
