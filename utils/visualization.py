@@ -153,11 +153,9 @@ def count_labels(directory):
     dict: A dictionary with keys as labels and values as counts of images.
     """
     label_counts = Counter()
-    # Iterate through each subdirectory in the given directory
     for label in os.listdir(directory):
         label_dir = os.path.join(directory, label)
         if os.path.isdir(label_dir):
-            # Count files in the subdirectory, assuming all are images
             label_counts[label] = len([f for f in os.listdir(label_dir) if os.path.isfile(os.path.join(label_dir, f))])
     
     return dict(label_counts)
