@@ -14,10 +14,19 @@ class EarlyStopMechanism:
         self.best_iteration = 0
         self.current_iteration = 0
 
+        # Ensure save directory exists
+        if not os.path.exists(self.save_path):
+            os.makedirs(self.save_path)
+
     def step(self, model, metric):
         self.current_iteration += 1
-        improve_condition = (metric < self.best_metric - self.metric_threshold) if self.mode == 'min' else (metric > self.best_metric + self.metric_threshold)
-        
+        if self.mode == 'min':
+            relative_change = (self.best_metric - metric) / self.best_metric
+            improve_condition = relative_change >= self.metric_threshold
+        else:
+            relative_change = (metric - self.best_metric) / self.best_metric
+            improve_condition = relative_change >= self.metric_threshold
+
         if improve_condition:
             self.best_metric = metric
             self.best_iteration = self.current_iteration
