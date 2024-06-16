@@ -11,17 +11,13 @@ import configs
 class ImageDataset(Dataset): 
     """
     """
-    def __init__(self, clean_dir, degradation_dirs, patch_size, transforms, v_threshold, h_threshold, mode, upscale_factor, upscale): 
+    def __init__(self, clean_dir, degradation_dirs, patch_size, transforms, v_threshold, h_threshold, mode): 
         self.clean_dir = sorted(glob(os.path.join(clean_dir, "/*")))
         self.degra_dir = sorted(glob(os.path.join(degradation_dirs, "/*")))
         self.patch_size = patch_size
         
         self.v_threshold = v_threshold 
         self.h_threhshold = h_threshold
-        
-        self.factor = upscale_factor
-
-        self.upscale = upscale
 
         if transforms: 
             self.transforms = transforms
@@ -44,12 +40,8 @@ class ImageDataset(Dataset):
     def getitem(self, index): 
         """
         """
-        if self.upscale:
-            clean_img = self.transforms(self.bicubic_upscale(self.clean_dir[index]), self.factor)
-            degra_img = self.transforms(self.bicubic_upscale(self.degra_dir[index]), self.factor)
-        else: 
-            clean_img = self.transforms(Image.open(self.clean_dir[index]).convert("RGB"))
-            degra_img = self.transforms(Image.open(self.degra_dir[index]).convert("RGB"))
+        clean_img = self.transforms(Image.open(self.clean_dir[index]).convert("RGB"))
+        degra_img = self.transforms(Image.open(self.degra_dir[index]).convert("RGB"))
 
         img_w, img_h = clean_img.shape[1], clean_img[2]
         d_img_w, d_img_h = degra_img.shape[1], degra_img.shape[2]
@@ -81,7 +73,7 @@ class ImageDataset(Dataset):
 
         return upscaled_img
     
-def load_dataset(batch_size, shuffle, mode, upscale_factor, upscale):
+def load_dataset(batch_size, shuffle, mode):
     """
     """
     assert mode in ["train", "val", "test"], "[ERROR] Invalid dataset mode"
@@ -90,8 +82,6 @@ def load_dataset(batch_size, shuffle, mode, upscale_factor, upscale):
                         patch_size=configs.patch_size, 
                         v_threshold=0.25, 
                         h_threshold=0.25, 
-                        mode=mode,
-                        upscale_factor=upscale_factor,
-                        upscale=upscale)
+                        mode=mode)
     
     return DataLoader(dataset=dataset, batch_size=batch_size, shuffle=shuffle, drop_last=False)
