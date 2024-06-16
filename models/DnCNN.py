@@ -21,7 +21,7 @@ class DnCNN(nn.Module):
     def forward(self, x): 
         out = self.feature_extraction(x)
         out = self.conv_backbone(out)
-        out = self.feature_reconstruction(x)
+        out = self.feature_reconstruction(out)
         return out 
     
 def get_DnCNN(input_channels = 3, hidden_channels = 64, output_channels = 3, num_layers = 20): 
