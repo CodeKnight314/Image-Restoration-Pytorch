@@ -6,6 +6,7 @@ from tqdm import tqdm
 import os
 import matplotlib.pyplot as plt
 from collections import Counter
+import argparse
 
 def add_gaussian_noise(image_path : str, mean : int, std : int, output_directory : Union[str, None], show : bool = False): 
     """
@@ -216,5 +217,19 @@ def plot_data(output_log, output_directory, save_fig, show_fig):
 
     plt.close()
 
-    
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser() 
+    parser.add_argument("--img_dir", type=str, required=True, help="[HELP] Path to image directory")
+    parser.add_argument("--output_dir", type=str, required=True, help="[HELP] Path to output directory")
+    parser.add_argument("--mode", type=str, required=True, help="[HELP] Mode for operation: gaussian, impulse, uniform")
+    parser.add_argument("--constantA", type=int, required=True, help="[HELP] Lower Bound or Mean, depending on mode.")
+    parser.add_argument("--constantB", type=int, required=True, help="[HELP] Upper Bound or Sigma, depending on mode.")
+
+    args = parser.parse_args()
+
+    batch_noise(root_dir=args.img_dir, 
+                output_dir=args.output_dir, 
+                mode=args.mode, 
+                mean=args.constantA, 
+                std=args.constantB)
 
