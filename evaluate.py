@@ -4,7 +4,16 @@ from utils.log_writer import LOGWRITER
 from tqdm import tqdm
 import configs
 
-def evaluate(model, test_loader, criterion, crtierion_psnr, criterion_ssim, log_writer : LOGWRITER): 
+def rgb_to_ycbcr(image):
+    """Convert an RGB image to YCbCr."""
+    matrix = torch.tensor([[0.299, 0.587, 0.114],
+                           [-0.168736, -0.331264, 0.5],
+                           [0.5, -0.418688, -0.081312]]).to(image.device)
+    shift = torch.tensor([0, 128, 128]).to(image.device)
+    ycbcr = torch.tensordot(image, matrix, dims=([image.dim() - 3], [0])) + shift
+    return ycbcr
+
+def evaluate(model, test_loader, criterion, criterion_psnr, criterion_ssim, log_writer : LOGWRITER): 
     model.eval() 
     
     total_loss = 0.0 
@@ -19,7 +28,15 @@ def evaluate(model, test_loader, criterion, crtierion_psnr, criterion_ssim, log_
             sr_img = model(degraded_img)
 
             loss = criterion(clean_img, sr_img)
-            psnr = crtierion_psnr(clean_img, sr_img)
+            
+            clean_img_YCbCr = rgb_to_ycbcr(clean_img)
+            clean_img_Y = clean_img_YCbCr[:, 0, :, :]
+            
+            sr_img_YCbCr = rgb_to_ycbcr(sr_img)
+            sr_img_Y = sr_img_YCbCr[:, 0, :, :]
+            
+            psnr = criterion_psnr(clean_img_Y, sr_img_Y)
+            
             ssim = criterion_ssim(clean_img, sr_img)
 
             total_loss+=loss
