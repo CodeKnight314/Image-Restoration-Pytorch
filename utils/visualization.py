@@ -6,6 +6,8 @@ from tqdm import tqdm
 import os
 import matplotlib.pyplot as plt
 from collections import Counter
+import torch
+from PIL import Image
 
 def add_gaussian_noise(image_path : str, mean : int, std : int, output_directory : Union[str, None], show : bool = False): 
     """
@@ -215,3 +217,22 @@ def plot_data(output_log, output_directory, save_fig, show_fig):
         plt.show() 
 
     plt.close()
+
+def tensor_to_pil_save(tensor, path):
+    """
+    Converts an RGB Tensor to a PIL image and saves it.
+
+    Args:
+        tensor (torch.Tensor): The input tensor to be converted. Expected shape is (C, H, W).
+        path (str): The file path where the image will be saved.
+    """
+    tensor = tensor.to('cpu').clone()
+    
+    tensor = tensor.squeeze(0)  
+    tensor = torch.clamp(tensor, 0, 1)  
+    tensor = tensor.mul(255).byte()  
+    
+    tensor = tensor.permute(1, 2, 0).numpy()  
+    pil_image = Image.fromarray(tensor)
+    
+    pil_image.save(path)
