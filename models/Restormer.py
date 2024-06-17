@@ -34,7 +34,6 @@ class MDTA(nn.Module):
         """
         """
         B, C, H, W = x.shape
-        residual = x
 
         x = self.layer_norm(x)
         
@@ -45,7 +44,7 @@ class MDTA(nn.Module):
         attn_score = self.attn_calculation(Q, K, V)
 
         attn_score = attn_score.permute(0, 1, 3, 2).reshape(B, C, H, W)
-        output = self.O(attn_score) + residual
+        output = self.O(attn_score)
         return output
 
 class GDFN(nn.Module): 
@@ -66,10 +65,24 @@ class GDFN(nn.Module):
     def forward(self, x): 
         """
         """
+        x = self.layer_norm(x)
         gated_conv_output = self.gating_conv(x)
         information_conv_output = self.information_conv(x)
         information_gated = torch.mul(gated_conv_output, information_conv_output)
 
-        output = self.reconstruction_conv(information_gated) + x 
+        output = self.reconstruction_conv(information_gated)
 
         return output
+
+class TransformerBlock(nn.Module): 
+    def __init__(self, channels, expansion_factor, num_heads): 
+        super().__init__() 
+
+        self.MDTA = MDTA(channels=channels, heads=num_heads)
+        self.GDFN = GDFN(channels=channels, expansion_factor=expansion_factor)
+
+    def forward(self, x): 
+        x = self.MDTA(x) + x 
+        x = self.GDFN(x) + x
+
+        return x

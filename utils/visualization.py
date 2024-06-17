@@ -215,4 +215,3 @@ def plot_data(output_log, output_directory, save_fig, show_fig):
         plt.show() 
 
     plt.close()
-
