@@ -86,3 +86,27 @@ class TransformerBlock(nn.Module):
         x = self.GDFN(x) + x
 
         return x
+
+class Restormer(nn.Module): 
+    def __init__(self, input_channels, output_channels, channels, num_levels, num_transformers, num_heads, expansion_factor):
+        super().__init__() 
+
+        self.feature_extraction_conv = nn.Conv2d(input_channels, channels[0], kernel_size=3, stride=1, padding=1, bias=False)
+        self.levels = nn.ModuleList()
+        for i in range(num_levels):
+            self.levels.append(nn.Sequential(
+                *[TransformerBlock(channels=channels[i], 
+                                   expansion_factor=expansion_factor, 
+                                   num_heads=num_heads[i]) for _ in range(num_transformers[i])]
+            ))
+
+        for i in range(num_levels - 2, -1, -1):
+            self.levels.append(nn.Sequential(
+                *[TransformerBlock(channels=channels[i], 
+                                   expansion_factor=expansion_factor, 
+                                   num_heads=num_heads[i]) for _ in range(num_transformers[i])]
+            ))
+
+        self.refinement = nn.Sequential(*[TransformerBlock(channels=channels[0], expansion_factor=expansion_factor, num_heads=num_heads[0]) for _ in range(num_transformers[0])])
+
+        self.feature_reconstruction = nn.Conv2d(channels[0], output_channels, kernel_size=3, stride=1, padding=1, bias=False)        
