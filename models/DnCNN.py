@@ -1,7 +1,8 @@
 import torch 
 import torch.nn as nn 
+from base_model import BaseModelIR
 
-class DnCNN(nn.Module): 
+class DnCNN(BaseModelIR): 
     def __init__(self, input_channels, hidden_channels, output_channels, num_layers):
         super().__init__() 
         

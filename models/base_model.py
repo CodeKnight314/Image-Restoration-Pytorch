@@ -1,11 +1,11 @@
 import torch 
 import torch.nn as nn 
 from tqdm import tqdm 
-from utils.log_writer import * 
+from utils.log_writer import LOGWRITER 
 from utils.visualization import *
 
 class BaseModelIR(nn.Module): 
-    def __init__(self, model): 
+    def __init__(self):
         super().__init__()
     
     def train_step(self, optimizer, data, criterion):
@@ -35,7 +35,9 @@ class BaseModelIR(nn.Module):
 
         return loss.item()
     
-    def train(self, train_dl, valid_dl, optimizer, criterion, lr_scheduler, epochs, log_writer : LOGWRITER): 
+    def train_model(self, train_dl, valid_dl, optimizer, criterion, lr_scheduler, epochs, log_writer: LOGWRITER): 
+        """
+        """
         best_loss = float("inf")
 
         for epoch in range(1, epochs + 1):
@@ -47,20 +49,28 @@ class BaseModelIR(nn.Module):
                 total_train_loss += tr_loss
 
             avg_train_loss = total_train_loss / len(train_dl)
-            avg_valid_loss = self.evaluate(valid_dl, criterion, criterion, criterion)
+            avg_valid_loss = self.evaluate(valid_dl, criterion)
+
+            if lr_scheduler:
+                lr_scheduler.step(avg_valid_loss)
 
             log_writer.write(epoch=epoch, avg_train_loss=avg_train_loss, avg_valid_loss=avg_valid_loss)
 
+            if avg_valid_loss < best_loss:
+                best_loss = avg_valid_loss
+                torch.save(self.state_dict(), 'best_model.pth')
+
     def evaluate(self, test_loader, criterion): 
-        self.eval() 
+        """
+        """
+        self.eval()
         
         total_loss = 0.0 
         
         with torch.no_grad(): 
-
-            for i, data in tqdm(enumerate(test_loader)):
+            for i, data in tqdm(enumerate(test_loader), total=len(test_loader)):
                 loss = self.eval_step(data, criterion)
-                total_loss+=loss
+                total_loss += loss
 
         avg_loss = total_loss / len(test_loader)   
 

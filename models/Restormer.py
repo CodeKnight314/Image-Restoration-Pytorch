@@ -1,5 +1,6 @@
 import torch 
 import torch.nn as nn 
+from base_model import BaseModelIR
 
 class MDTA(nn.Module):
     def __init__(self, channels, heads):
@@ -78,7 +79,7 @@ class TransformerBlock(nn.Module):
         x = self.GDFN(x) + x
         return x
 
-class Restormer(nn.Module):
+class Restormer(BaseModelIR):
     def __init__(self, input_channels, output_channels, channels, num_levels, num_transformers, num_heads, expansion_factor):
         super().__init__()
         self.feature_extraction_conv = nn.Conv2d(input_channels, channels[0], kernel_size=3, stride=1, padding=1, bias=False)
