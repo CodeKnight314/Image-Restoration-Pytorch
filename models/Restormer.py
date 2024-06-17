@@ -70,6 +70,6 @@ class GDFN(nn.Module):
         information_conv_output = self.information_conv(x)
         information_gated = torch.mul(gated_conv_output, information_conv_output)
 
-        output = self.reconstruction_conv(information_conv_output) + x 
+        output = self.reconstruction_conv(information_gated) + x 
 
         return output
