@@ -22,7 +22,6 @@ def patch_generation(image_directory, output_directory, patch_width, patch_heigh
                 img = Image.open(img_path).convert("RGB")
                 img_width, img_height = img.size
 
-                # Compute relative path to preserve directory structure
                 relative_path = os.path.relpath(root, image_directory)
                 output_subdir = os.path.join(output_directory, relative_path)
                 if not os.path.exists(output_subdir):

@@ -15,7 +15,6 @@ def preprocess_images(input_dir, output_dir, levels):
         level_dir = os.path.join(output_dir, f"level_{level}")
         os.makedirs(level_dir, exist_ok=True)
 
-        # Use glob to recursively find image files in the input directory
         image_files = glob.glob(os.path.join(input_dir, '**', '*.png'), recursive=True) + glob.glob(os.path.join(input_dir, '**', '*.jpg'), recursive=True) + glob.glob(os.path.join(input_dir, '**', '*.jpeg'), recursive=True)
 
         for image_path in tqdm(image_files, desc=f"Processing level {level}"):
