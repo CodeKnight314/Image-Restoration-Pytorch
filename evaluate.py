@@ -13,6 +13,16 @@ def rgb_to_ycbcr(image):
     ycbcr = torch.tensordot(image, matrix, dims=([image.dim() - 3], [0])) + shift
     return ycbcr
 
+def ycbcr_to_rgb(image):
+    """Convert a YCbCr image to RGB."""
+    matrix = torch.tensor([[1.0, 0.0, 1.402],
+                           [1.0, -0.344136, -0.714136],
+                           [1.0, 1.772, 0.0]]).to(image.device)
+    shift = torch.tensor([0, -128, -128]).to(image.device)
+    ycbcr = image + shift
+    rgb = torch.tensordot(ycbcr, matrix, dims=([image.dim() - 3], [0]))
+    return rgb
+
 def evaluate(model, test_loader, criterion, criterion_psnr, criterion_ssim, log_writer : LOGWRITER): 
     model.eval() 
     
