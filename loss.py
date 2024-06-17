@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.optim as optim
 
 class PSNR(nn.Module):
     def __init__(self, maximum_pixel_value): 
@@ -158,3 +159,22 @@ class MSE_Loss(nn.Module):
         """
         difference = x - y 
         return torch.mean(difference ** 2)
+
+def get_optimizer(model, optimizer_config):
+    optimizer_name = optimizer_config['name']
+    learning_rate = optimizer_config.get('lr', 1e-3)
+    if optimizer_name == 'Adam':
+        return optim.Adam(model.parameters(), lr=learning_rate)
+    elif optimizer_name == 'SGD':
+        return optim.SGD(model.parameters(), lr=learning_rate, momentum=optimizer_config.get('momentum', 0.9))
+    else:
+        raise ValueError(f"[ERROR] Unknown optimizer name: {optimizer_name}")
+
+def get_scheduler(optimizer, scheduler_config):
+    scheduler_name = scheduler_config['name']
+    if scheduler_name == 'StepLR':
+        return optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_config.get('step_size', 30), gamma=scheduler_config.get('gamma', 0.1))
+    elif scheduler_name == 'CosineAnnealingLR':
+        return optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=scheduler_config.get('T_max', 50))
+    else:
+        raise ValueError(f"[ERROR] Unknown scheduler name: {scheduler_name}")
