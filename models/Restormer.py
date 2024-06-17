@@ -118,7 +118,7 @@ class Restormer(nn.Module):
     def forward(self, x): 
         residual = x
 
-        feature_conv = self.feature_extraction_conv(x)
+        x = self.feature_extraction_conv(x)
 
         skip_connections = []
         for i in range(len(self.levels) // 2):
