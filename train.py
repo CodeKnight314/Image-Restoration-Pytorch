@@ -4,6 +4,15 @@ import configs
 from tqdm import tqdm
 import os
 
+def rgb_to_ycbcr(image):
+    """Convert an RGB image to YCbCr."""
+    matrix = torch.tensor([[0.299, 0.587, 0.114],
+                           [-0.168736, -0.331264, 0.5],
+                           [0.5, -0.418688, -0.081312]]).to(image.device)
+    shift = torch.tensor([0, 128, 128]).to(image.device)
+    ycbcr = torch.tensordot(image, matrix, dims=([image.dim() - 3], [0])) + shift
+    return ycbcr
+
 def train_step(model, criterion, data, optimizer): 
     """
     Performs a single training step for the given model.
@@ -48,8 +57,12 @@ def valid_step(model, criterion, data, criterion_psnr):
     sr_img = model(degraded_img)
     
     loss = criterion(clean_img, sr_img)
+
+    clean_img_YCbCr = rgb_to_ycbcr(clean_img)
+
+    sr_img_YCbCr = rgb_to_ycbcr(sr_img)
     
-    psnr = criterion_psnr(clean_img, sr_img)
+    psnr = criterion_psnr(clean_img_YCbCr, sr_img_YCbCr)
     
     return loss.item(), psnr.item()
 
