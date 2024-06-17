@@ -102,11 +102,39 @@ class Restormer(nn.Module):
 
         for i in range(num_levels - 2, -1, -1):
             self.levels.append(nn.Sequential(
-                *[TransformerBlock(channels=channels[i], 
+                *[nn.Conv2d(channels * 2, channels, kernel_size=1, stride=1, padding=0, bias=False),
+                  TransformerBlock(channels=channels[i], 
                                    expansion_factor=expansion_factor, 
                                    num_heads=num_heads[i]) for _ in range(num_transformers[i])]
             ))
 
         self.refinement = nn.Sequential(*[TransformerBlock(channels=channels[0], expansion_factor=expansion_factor, num_heads=num_heads[0]) for _ in range(num_transformers[0])])
 
-        self.feature_reconstruction = nn.Conv2d(channels[0], output_channels, kernel_size=3, stride=1, padding=1, bias=False)        
+        self.feature_reconstruction = nn.Conv2d(channels[0], output_channels, kernel_size=3, stride=1, padding=1, bias=False)    
+
+        self.upsample = nn.PixelShuffle(2)
+        self.downsample = nn.PixelUnshuffle(2)
+
+    def forward(self, x): 
+        residual = x
+
+        feature_conv = self.feature_extraction_conv(x)
+
+        skip_connections = []
+        for i in range(len(self.levels) // 2):
+            x = self.levels[i](x)
+            skip_connections.append(x)
+            x = self.downsample(x)
+
+        x = self.levels[len(self.levels)//2 + 1](skip_connections[-1])
+
+        for i in range(len(self.levels) // 2 + 2, len(self.levels)):
+            x = torch.cat([self.upsample(x), skip_connections.pop()])
+            x = self.levels[i](x)
+        
+        x = self.refinement(x) 
+        x = self.feature_reconstruction(x) 
+
+        output = x + residual
+
+        return output
