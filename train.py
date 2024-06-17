@@ -13,6 +13,16 @@ def rgb_to_ycbcr(image):
     ycbcr = torch.tensordot(image, matrix, dims=([image.dim() - 3], [0])) + shift
     return ycbcr
 
+def ycbcr_to_rgb(image):
+    """Convert a YCbCr image to RGB."""
+    matrix = torch.tensor([[1.0, 0.0, 1.402],
+                           [1.0, -0.344136, -0.714136],
+                           [1.0, 1.772, 0.0]]).to(image.device)
+    shift = torch.tensor([0, -128, -128]).to(image.device)
+    ycbcr = image + shift
+    rgb = torch.tensordot(ycbcr, matrix, dims=([image.dim() - 3], [0]))
+    return rgb
+
 def train_step(model, criterion, data, optimizer): 
     """
     Performs a single training step for the given model.
@@ -60,7 +70,7 @@ def valid_step(model, criterion, data, criterion_psnr):
 
     clean_img_YCbCr = rgb_to_ycbcr(clean_img)
     clean_img_Y = clean_img_YCbCr[:, 0, :, :]
-    
+
     sr_img_YCbCr = rgb_to_ycbcr(sr_img)
     sr_img_Y = sr_img_YCbCr[:, 0, :, :]
     
