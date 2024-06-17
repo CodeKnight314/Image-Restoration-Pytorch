@@ -236,3 +236,22 @@ def tensor_to_pil_save(tensor, path):
     pil_image = Image.fromarray(tensor)
     
     pil_image.save(path)
+
+def rgb_to_ycbcr(image):
+    """Convert an RGB image to YCbCr."""
+    matrix = torch.tensor([[0.299, 0.587, 0.114],
+                           [-0.168736, -0.331264, 0.5],
+                           [0.5, -0.418688, -0.081312]]).to(image.device)
+    shift = torch.tensor([0, 128, 128]).to(image.device)
+    ycbcr = torch.tensordot(image, matrix, dims=([image.dim() - 3], [0])) + shift
+    return ycbcr
+
+def ycbcr_to_rgb(image):
+    """Convert a YCbCr image to RGB."""
+    matrix = torch.tensor([[1.0, 0.0, 1.402],
+                           [1.0, -0.344136, -0.714136],
+                           [1.0, 1.772, 0.0]]).to(image.device)
+    shift = torch.tensor([0, -128, -128]).to(image.device)
+    ycbcr = image + shift
+    rgb = torch.tensordot(ycbcr, matrix, dims=([image.dim() - 3], [0]))
+    return rgb
