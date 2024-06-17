@@ -59,10 +59,12 @@ def valid_step(model, criterion, data, criterion_psnr):
     loss = criterion(clean_img, sr_img)
 
     clean_img_YCbCr = rgb_to_ycbcr(clean_img)
-
-    sr_img_YCbCr = rgb_to_ycbcr(sr_img)
+    clean_img_Y = clean_img_YCbCr[:, 0, :, :]
     
-    psnr = criterion_psnr(clean_img_YCbCr, sr_img_YCbCr)
+    sr_img_YCbCr = rgb_to_ycbcr(sr_img)
+    sr_img_Y = sr_img_YCbCr[:, 0, :, :]
+    
+    psnr = criterion_psnr(clean_img_Y, sr_img_Y)
     
     return loss.item(), psnr.item()
 
