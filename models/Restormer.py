@@ -199,6 +199,8 @@ class Restormer(BaseModelIR):
         return avg_vld_loss, avg_vld_psnr_loss
 
     def update_dataloaders_based_on_iterations(self, train_dl, valid_dl, iteration):
+        """
+        """
         if iteration >= 276000:
             train_dl = load_dataset(384, 8, shuffle=True, mode="train")
             valid_dl = load_dataset(384, 8, shuffle=True, mode="val")
