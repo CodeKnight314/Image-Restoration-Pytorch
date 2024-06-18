@@ -22,16 +22,8 @@ class ImageDataset(Dataset):
         if transforms: 
             self.transforms = transforms
         else: 
-            if mode == "train": 
-                self.transforms = T.Compose([T.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
-                                             T.ToTensor(), 
-                                             T.Normalize(mean = [], std = [])])
-            elif mode == "val":
-                self.transforms = T.Compose([T.ToTensor(), 
-                                             T.Normalize(mean = [], std = [])])
-            else: 
-                raise ValueError(f"[ERROR] {mode} is an invalid mode.")
-    
+            self.transforms = T.Compose([T.ToTensor(), T.Normalize(mean = [], std = [])])
+
     def __len__(self): 
         """
         """
@@ -63,23 +55,14 @@ class ImageDataset(Dataset):
             degra_img = T.functional.hflip(degra_img)
 
         return clean_img, degra_img
-
-    def bicubic_upscale(self, image, upscale_factor): 
-        image = Image.open(image).convert("RGB")
-
-        width, height = image.size
-
-        upscaled_img = image.resize(width * upscale_factor, height * upscale_factor, Image.BICUBIC)
-
-        return upscaled_img
     
-def load_dataset(batch_size, shuffle, mode):
+def load_dataset(patch_size, batch_size, shuffle, mode):
     """
     """
     assert mode in ["train", "val", "test"], "[ERROR] Invalid dataset mode"
     dataset = ImageDataset(clean_dir=configs.clean_dir, 
                         degradation_dirs=configs.degradation_dir, 
-                        patch_size=configs.patch_size, 
+                        patch_size=patch_size, 
                         v_threshold=0.25, 
                         h_threshold=0.25, 
                         mode=mode)
