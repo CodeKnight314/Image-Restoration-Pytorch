@@ -5,7 +5,9 @@ from tqdm import tqdm
 import configs
 from utils.visualization import *
 
-def evaluate(model, test_loader, criterion, criterion_psnr, criterion_ssim, log_writer : LOGWRITER): 
+def evaluate(model, test_loader, criterion, criterion_psnr, criterion_ssim, log_writer : LOGWRITER):
+    """
+    """ 
     model.eval() 
     
     total_loss = 0.0 
