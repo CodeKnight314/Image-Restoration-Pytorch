@@ -1,6 +1,12 @@
 import torch 
 import torch.nn as nn 
 from base_model import BaseModelIR
+from utils.log_writer import LOGWRITER
+from tqdm import tqdm
+from loss import *
+from utils.visualization import rgb_to_ycbcr, ycbcr_to_rgb
+import os
+import configs
 
 class MDTA(nn.Module):
     def __init__(self, channels, heads):
@@ -127,3 +133,71 @@ class Restormer(BaseModelIR):
         x = self.feature_reconstruction(x)
         output = x + residual
         return output
+    
+    def train_model(self, train_dl, valid_dl, optimizer, criterion, lr_scheduler, epochs, log_writer: LOGWRITER):
+        """
+        """
+        best_loss = float('inf')
+
+        criterion_psnr = PSNR(maximum_pixel_value=1.0)
+
+        iteration = 0
+
+        for epoch in range(epochs):
+            self.train() 
+            
+            total_tr_loss = 0.0 
+            for i, data in tqdm(enumerate(train_dl), total=len(train_dl)):
+                optimizer.zero_grad()
+                clean_img, degra_img = data 
+                sr_img = self(degra_img)
+                
+                mse_loss = criterion(clean_img, sr_img)
+                optimizer.step()
+
+                total_tr_loss+=mse_loss
+
+                iteration+=1
+
+            avg_tr_loss = total_tr_loss / len(train_dl)
+            avg_vld_loss, avg_vld_psnr_loss = self.evaluate_model(valid_dl, criterion, criterion_psnr)
+
+            log_writer.write(epoch=epoch+1, tr_loss=avg_tr_loss, vld_loss = avg_vld_loss, vld_psnr = avg_vld_psnr_loss)
+
+            if best_loss > avg_vld_loss: 
+                best_loss = avg_vld_loss
+                torch.save(self.state_dict(), os.path.join())
+
+
+    def evaluate_model(self, valid_dl, criterion, criterion_psnr):
+        """
+        """
+        self.eval() 
+
+        total_vld_loss = 0.0 
+        total_vld_psnr_loss = 0.0
+
+        with torch.no_grad(): 
+            for i, data in tqdm(enumerate(valid_dl)):
+                clean_img, degrad_img = data 
+                sr_img = self(degrad_img)
+
+                mse_loss = criterion(clean_img, sr_img)
+
+                clean_img_YCbCr = rgb_to_ycbcr(clean_img)
+                clean_img_Y = clean_img_YCbCr[:, 0, :, :]
+                sr_img_YCbCr = rgb_to_ycbcr(sr_img)
+                sr_img_Y = sr_img_YCbCr[:, 0, :, :]
+
+                psnr_loss = criterion_psnr(clean_img_Y, sr_img_Y)
+
+                total_vld_loss+=mse_loss 
+                total_vld_psnr_loss+=psnr_loss
+
+        avg_vld_loss =  total_vld_loss / len(valid_dl)
+        avg_vld_psnr_loss = total_vld_psnr_loss / len(valid_dl)
+
+        return avg_vld_loss, avg_vld_psnr_loss
+
+
+    
