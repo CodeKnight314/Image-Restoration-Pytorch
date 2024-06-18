@@ -49,7 +49,7 @@ class BaseModelIR(nn.Module):
                 total_train_loss += tr_loss
 
             avg_train_loss = total_train_loss / len(train_dl)
-            avg_valid_loss = self.evaluate(valid_dl, criterion)
+            avg_valid_loss = self.evaluate_model(valid_dl, criterion)
 
             if lr_scheduler:
                 lr_scheduler.step(avg_valid_loss)
@@ -60,7 +60,7 @@ class BaseModelIR(nn.Module):
                 best_loss = avg_valid_loss
                 torch.save(self.state_dict(), 'best_model.pth')
 
-    def evaluate(self, test_loader, criterion): 
+    def evaluate_model(self, test_loader, criterion): 
         """
         """
         self.eval()
