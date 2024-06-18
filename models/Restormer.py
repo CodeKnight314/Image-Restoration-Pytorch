@@ -7,6 +7,7 @@ from loss import *
 from utils.visualization import rgb_to_ycbcr, ycbcr_to_rgb
 import os
 import configs
+from dataset.dataset import load_dataset
 
 class MDTA(nn.Module):
     def __init__(self, channels, heads):
@@ -166,8 +167,24 @@ class Restormer(BaseModelIR):
 
             if best_loss > avg_vld_loss: 
                 best_loss = avg_vld_loss
-                torch.save(self.state_dict(), os.path.join())
-
+                torch.save(self.state_dict(), os.path.join(configs.save_pth, f"Epoch {epoch+1}_RESTORMER.pth"))
+            
+            # Progressive learning at [92K, 156K, 204K, 240K, 276K]
+            if iteration >= 276000: 
+                train_dl = load_dataset(384, 8, shuffle=True, mode="train")
+                valid_dl = load_dataset(384, 8, shuffle=True, mode="val")
+            elif iteration >= 240000: 
+                train_dl = load_dataset(320, 8, shuffle=True, mode="train")
+                valid_dl = load_dataset(320, 8, shuffle=True, mode="val")
+            elif iteration >= 204000:
+                train_dl = load_dataset(256, 16, shuffle=True, mode="train")
+                valid_dl = load_dataset(256, 16, shuffle=True, mode="val")
+            elif iteration >= 156000: 
+                train_dl = load_dataset(192, 32, shuffle=True, mode="train")
+                valid_dl = load_dataset(192, 32, shuffle=True, mode="val")
+            elif iteration >= 92000: 
+                train_dl = load_dataset(160, 40, shuffle=True, mode="train")
+                valid_dl = load_dataset(160, 40, shuffle=True, mode="val")
 
     def evaluate_model(self, valid_dl, criterion, criterion_psnr):
         """
