@@ -139,66 +139,50 @@ class Restormer(BaseModelIR):
         """
         """
         best_loss = float('inf')
-
         criterion_psnr = PSNR(maximum_pixel_value=1.0)
-
         iteration = 0
 
         for epoch in range(epochs):
-            self.train() 
-            
-            total_tr_loss = 0.0 
+            self.train()
+            total_tr_loss = 0.0
             for i, data in tqdm(enumerate(train_dl), total=len(train_dl)):
                 optimizer.zero_grad()
-                clean_img, degra_img = data 
+                
+                clean_img, degra_img = data
+                
                 sr_img = self(degra_img)
                 
                 mse_loss = criterion(clean_img, sr_img)
+                mse_loss.backward()
                 optimizer.step()
 
-                total_tr_loss+=mse_loss
-
-                iteration+=1
+                total_tr_loss += mse_loss.item()
+                iteration += 1
 
             avg_tr_loss = total_tr_loss / len(train_dl)
             avg_vld_loss, avg_vld_psnr_loss = self.evaluate_model(valid_dl, criterion, criterion_psnr)
-
-            log_writer.write(epoch=epoch+1, tr_loss=avg_tr_loss, vld_loss = avg_vld_loss, vld_psnr = avg_vld_psnr_loss)
-
-            if best_loss > avg_vld_loss: 
-                best_loss = avg_vld_loss
-                torch.save(self.state_dict(), os.path.join(configs.save_pth, f"Epoch {epoch+1}_RESTORMER.pth"))
             
-            # Progressive learning at [92K, 156K, 204K, 240K, 276K]
-            if iteration >= 276000: 
-                train_dl = load_dataset(384, 8, shuffle=True, mode="train")
-                valid_dl = load_dataset(384, 8, shuffle=True, mode="val")
-            elif iteration >= 240000: 
-                train_dl = load_dataset(320, 8, shuffle=True, mode="train")
-                valid_dl = load_dataset(320, 8, shuffle=True, mode="val")
-            elif iteration >= 204000:
-                train_dl = load_dataset(256, 16, shuffle=True, mode="train")
-                valid_dl = load_dataset(256, 16, shuffle=True, mode="val")
-            elif iteration >= 156000: 
-                train_dl = load_dataset(192, 32, shuffle=True, mode="train")
-                valid_dl = load_dataset(192, 32, shuffle=True, mode="val")
-            elif iteration >= 92000: 
-                train_dl = load_dataset(160, 40, shuffle=True, mode="train")
-                valid_dl = load_dataset(160, 40, shuffle=True, mode="val")
+            log_writer.write(epoch=epoch + 1, tr_loss=avg_tr_loss, vld_loss=avg_vld_loss, vld_psnr=avg_vld_psnr_loss)
+            
+            lr_scheduler.step()
+
+            if best_loss > avg_vld_loss:
+                best_loss = avg_vld_loss
+                torch.save(self.state_dict(), os.path.join(configs.save_pth, f"Epoch {epoch + 1}_RESTORMER.pth"))
+
+            train_dl, valid_dl = self.update_dataloaders_based_on_iterations(train_dl, valid_dl, iteration)
 
     def evaluate_model(self, valid_dl, criterion, criterion_psnr):
         """
         """
-        self.eval() 
-
-        total_vld_loss = 0.0 
+        self.eval()
+        total_vld_loss = 0.0
         total_vld_psnr_loss = 0.0
 
-        with torch.no_grad(): 
+        with torch.no_grad():
             for i, data in tqdm(enumerate(valid_dl)):
-                clean_img, degrad_img = data 
+                clean_img, degrad_img = data
                 sr_img = self(degrad_img)
-
                 mse_loss = criterion(clean_img, sr_img)
 
                 clean_img_YCbCr = rgb_to_ycbcr(clean_img)
@@ -207,14 +191,31 @@ class Restormer(BaseModelIR):
                 sr_img_Y = sr_img_YCbCr[:, 0, :, :]
 
                 psnr_loss = criterion_psnr(clean_img_Y, sr_img_Y)
+                total_vld_loss += mse_loss.item()
+                total_vld_psnr_loss += psnr_loss.item()
 
-                total_vld_loss+=mse_loss 
-                total_vld_psnr_loss+=psnr_loss
-
-        avg_vld_loss =  total_vld_loss / len(valid_dl)
+        avg_vld_loss = total_vld_loss / len(valid_dl)
         avg_vld_psnr_loss = total_vld_psnr_loss / len(valid_dl)
-
         return avg_vld_loss, avg_vld_psnr_loss
+
+    def update_dataloaders_based_on_iterations(self, train_dl, valid_dl, iteration):
+        if iteration >= 276000:
+            train_dl = load_dataset(384, 8, shuffle=True, mode="train")
+            valid_dl = load_dataset(384, 8, shuffle=True, mode="val")
+        elif iteration >= 240000:
+            train_dl = load_dataset(320, 8, shuffle=True, mode="train")
+            valid_dl = load_dataset(320, 8, shuffle=True, mode="val")
+        elif iteration >= 204000:
+            train_dl = load_dataset(256, 16, shuffle=True, mode="train")
+            valid_dl = load_dataset(256, 16, shuffle=True, mode="val")
+        elif iteration >= 156000:
+            train_dl = load_dataset(192, 32, shuffle=True, mode="train")
+            valid_dl = load_dataset(192, 32, shuffle=True, mode="val")
+        elif iteration >= 92000:
+            train_dl = load_dataset(160, 40, shuffle=True, mode="train")
+            valid_dl = load_dataset(160, 40, shuffle=True, mode="val")
+        return train_dl, valid_dl
+        
 
 
     
