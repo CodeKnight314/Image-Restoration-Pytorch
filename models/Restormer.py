@@ -185,12 +185,7 @@ class Restormer(BaseModelIR):
                 sr_img = self(degrad_img)
                 mse_loss = criterion(clean_img, sr_img)
 
-                clean_img_YCbCr = rgb_to_ycbcr(clean_img)
-                clean_img_Y = clean_img_YCbCr[:, 0, :, :]
-                sr_img_YCbCr = rgb_to_ycbcr(sr_img)
-                sr_img_Y = sr_img_YCbCr[:, 0, :, :]
-
-                psnr_loss = criterion_psnr(clean_img_Y, sr_img_Y)
+                psnr_loss = criterion_psnr(clean_img, sr_img)
                 total_vld_loss += mse_loss.item()
                 total_vld_psnr_loss += psnr_loss.item()
 
