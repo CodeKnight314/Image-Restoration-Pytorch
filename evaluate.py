@@ -23,13 +23,7 @@ def evaluate(model, test_loader, criterion, criterion_psnr, criterion_ssim, log_
 
             loss = criterion(clean_img, sr_img)
             
-            clean_img_YCbCr = rgb_to_ycbcr(clean_img)
-            clean_img_Y = clean_img_YCbCr[:, 0, :, :]
-            
-            sr_img_YCbCr = rgb_to_ycbcr(sr_img)
-            sr_img_Y = sr_img_YCbCr[:, 0, :, :]
-            
-            psnr = criterion_psnr(clean_img_Y, sr_img_Y)
+            psnr = criterion_psnr(clean_img, sr_img)
             
             ssim = criterion_ssim(clean_img, sr_img)
 
