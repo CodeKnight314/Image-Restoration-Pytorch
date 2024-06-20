@@ -3,7 +3,7 @@ from PIL import Image
 import argparse
 from tqdm import tqdm
 
-def patch_generation(image_directory, output_directory, patch_width, patch_height, stride):
+def patch_generation(image_directory: str, output_directory: str, patch_width: int, patch_height: int, stride: int):
     """
     Generates image patches from images in a directory and saves them to an output directory,
     preserving the subdirectory structure.
@@ -46,4 +46,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    patch_generation(args.img_dir, args.out_dir, args.patch_h, args.patch_w, args.stride)
+    patch_generation(args.img_dir, args.out_dir, args.patch_w, args.patch_h, args.stride)
