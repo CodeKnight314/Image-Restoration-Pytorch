@@ -4,8 +4,9 @@ import configs
 from tqdm import tqdm
 import os
 from utils.visualization import *
+from torch.utils.data import DataLoader
 
-def train_step(model, criterion, data, optimizer): 
+def train_step(model: nn.Module, criterion: nn.Module, data: tuple[torch.Tensor, torch.Tensor], optimizer: torch.optim.Optimizer) -> float:
     """
     Performs a single training step for the given model.
 
@@ -31,7 +32,7 @@ def train_step(model, criterion, data, optimizer):
     
     return loss.item()
 
-def valid_step(model, criterion, data, criterion_psnr):
+def valid_step(model: nn.Module, criterion: nn.Module, data: tuple[torch.Tensor, torch.Tensor], criterion_psnr: nn.Module) -> tuple[float, float]:
     """
     Performs a single validation step for the given model.
 
@@ -60,7 +61,7 @@ def valid_step(model, criterion, data, criterion_psnr):
     
     return loss.item(), psnr.item()
 
-def train(model, criterion, criterion_psnr, train_dl, valid_dl, optimizer, scheduler, epochs, log_writer): 
+def train(model: nn.Module, criterion: nn.Module, criterion_psnr: nn.Module, train_dl: DataLoader, valid_dl: DataLoader, optimizer: torch.optim.Optimizer, scheduler: torch.optim.lr_scheduler._LRScheduler, epochs: int, log_writer: object): 
     """
     Trains and validates the model over a specified number of epochs.
 
@@ -111,6 +112,7 @@ def train(model, criterion, criterion_psnr, train_dl, valid_dl, optimizer, sched
             scheduler.step()
 
         log_writer.write(epoch=epoch, tr_loss=avg_train_loss, vl_loss=avg_valid_loss, vl_psnr=avg_valid_psnr)
+
 
 def main(): 
     """
