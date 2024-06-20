@@ -4,9 +4,18 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 class PSNR(nn.Module):
+    """
+    Implementation of PSNR Calculation for image tensors.
+    """
     def __init__(self, maximum_pixel_value): 
+        """
+        Initializes the PSNR Calculation module. 
+
+        Args: 
+            maximum_pixel_value (float): maximum pixel value of the input tensors for PSNR calculation.
+        """
         super().__init__()
-        self.me_loss = nn.MSELoss()
+        self.me_loss = MSE_Loss()
         self.max_value = maximum_pixel_value
 
     def forward(self, clean_img, sr_img): 
@@ -27,6 +36,12 @@ class PSNR(nn.Module):
 
 class SSIM(nn.Module):
     def __init__(self, constants=(0.0001, 0.0001)):
+        """
+        Initializes the SSIM calculation Module. 
+
+        Args: 
+            constants (Tuple[Int, Int]): Constants (C1, C2) for stablizing SSIM calculation.
+        """
         super().__init__()
         self.C1 = constants[0]
         self.C2 = constants[1]
@@ -99,6 +114,9 @@ class SSIM(nn.Module):
     
 class GradientPriorLoss(nn.Module):
     def __init__(self):
+        """
+        Initializes Gradient Prior Loss Calculation module.
+        """
         super(GradientPriorLoss, self).__init__()
         self.func = nn.L1Loss()
 
@@ -143,6 +161,9 @@ class GradientPriorLoss(nn.Module):
     
 class MSE_Loss(nn.Module):
     def __init__(self): 
+        """
+        Initializes MSE Calculation module.
+        """
         super.__init__()
 
     def forward(self, x, y): 
@@ -161,8 +182,26 @@ class MSE_Loss(nn.Module):
         return torch.mean(difference ** 2)
 
 def get_optimizer(model, optimizer_config):
+    """
+    Returns the optimizer specified in the optimizer_config dictionary for the given model.
+
+    Parameters:
+    - model: The neural network model whose parameters will be optimized.
+    - optimizer_config: Dictionary containing the configuration for the optimizer.
+      Expected keys:
+      - 'name': The name of the optimizer (e.g., 'Adam', 'SGD').
+      - 'lr': (Optional) Learning rate for the optimizer. Default is 1e-3.
+      - 'momentum': (Optional, for 'SGD' only) Momentum factor. Default is 0.9.
+
+    Returns:
+    - An instance of the specified optimizer.
+
+    Raises:
+    - ValueError: If an unknown optimizer name is provided.
+    """
     optimizer_name = optimizer_config['name']
     learning_rate = optimizer_config.get('lr', 1e-3)
+
     if optimizer_name == 'Adam':
         return optim.Adam(model.parameters(), lr=learning_rate)
     elif optimizer_name == 'SGD':
@@ -171,10 +210,30 @@ def get_optimizer(model, optimizer_config):
         raise ValueError(f"[ERROR] Unknown optimizer name: {optimizer_name}")
 
 def get_scheduler(optimizer, scheduler_config):
+    """
+    Returns the learning rate scheduler specified in the scheduler_config dictionary for the given optimizer.
+
+    Parameters:
+    - optimizer: The optimizer whose learning rate will be scheduled.
+    - scheduler_config: Dictionary containing the configuration for the scheduler.
+      Expected keys:
+      - 'name': The name of the scheduler (e.g., 'StepLR', 'CosineAnnealingLR').
+      - 'step_size': (Optional, for 'StepLR' only) Period of learning rate decay. Default is 30.
+      - 'eta_min' : (Optional, for 'CosineAnnealingLR' only) Minimum learning rate to decay to. 
+      - 'gamma': (Optional, for 'StepLR' only) Multiplicative factor of learning rate decay. Default is 0.1.
+      - 'T_max': (Optional, for 'CosineAnnealingLR' only) Maximum number of iterations. Default is 50.
+
+    Returns:
+    - An instance of the specified scheduler.
+
+    Raises:
+    - ValueError: If an unknown scheduler name is provided.
+    """
     scheduler_name = scheduler_config['name']
+
     if scheduler_name == 'StepLR':
         return optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_config.get('step_size', 30), gamma=scheduler_config.get('gamma', 0.1))
     elif scheduler_name == 'CosineAnnealingLR':
-        return optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=scheduler_config.get('T_max', 50))
+        return optim.lr_scheduler.CosineAnnealingLR(optimizer, eta_min=scheduler_config.get('eta_min', 1e-6), T_max=scheduler_config.get('T_max', 50))
     else:
         raise ValueError(f"[ERROR] Unknown scheduler name: {scheduler_name}")
