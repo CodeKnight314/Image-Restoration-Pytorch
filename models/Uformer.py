@@ -122,22 +122,60 @@ class Upsample(nn.Module):
         return output
     
 class UFormer(nn.Module):
-    def __init__(self, input_channels, output_channels, hidden_channels, depths : Tuple[int], heads : Tuple[int]): 
-        super().__init__() 
+    def __init__(self, input_channels, output_channels, hidden_channels, depths: Tuple[int], heads: Tuple[int]):
+        super().__init__()
 
-        self.input_conv = nn.Sequential(*[nn.Conv2d(input_channels, hidden_channels, kernel_size=3), 
-                                          nn.LeakyReLU()])
+        self.input_conv = nn.Sequential(
+            nn.Conv2d(input_channels, hidden_channels, kernel_size=3, stride=1, padding=1),
+            nn.LeakyReLU()
+        )
 
         self.encoders = nn.ModuleList()
         self.downsamples = nn.ModuleList()
         self.decoders = nn.ModuleList()
         self.upsamples = nn.ModuleList()
 
-        for i in range(4): 
-            self.encoders.append(nn.Sequential(*[LeWinTransformerBlock(hidden_channels * 2 ** i, heads[i], 8, hidden_channels * 2 ** i)]))
-            self.decoders.append(nn.Sequential(*[LeWinTransformerBlock(hidden_channels * 2 ** (i+1), heads[i], 8, hidden_channels * 2 ** i)]))
-            
-            self.downsamples.append(Downsample(hidden_channels * 2 ** i))
-            self.upsamples.append(Upsample(hidden_channels * 2 ** i))
+        for i in range(4):
+            self.encoders.append(
+                nn.Sequential(
+                    LeWinTransformerBlock(hidden_channels * 2 ** i, heads[i], 8, hidden_channels * 2 ** i)
+                )
+            )
+            if i < 3:  
+                self.downsamples.append(Downsample(hidden_channels * 2 ** i))
+
+            if i > 0:  
+                self.decoders.insert(0,
+                    nn.Sequential(
+                        LeWinTransformerBlock(hidden_channels * 2 ** (i), heads[i], 8, hidden_channels * 2 ** (i - 1))
+                    )
+                )
+            if i > 0:  
+                self.upsamples.insert(0,
+                    Upsample(hidden_channels * 2 ** i)
+                )
 
         self.output_conv = nn.Conv2d(hidden_channels, output_channels, kernel_size=3, stride=1, padding=1)
+
+    def forward(self, x):
+        residual = x
+
+        skips = []
+
+        x = self.input_conv(x)
+
+        for i, encoder in enumerate(self.encoders):
+            x = encoder(x)
+            skips.append(x)
+            if i < len(self.downsamples):  
+                x = self.downsamples[i](x)
+
+        for i, decoder in enumerate(self.decoders):
+            x = self.upsamples[i](x)
+            x = torch.cat([x, skips[-(i + 2)]], dim=1)
+            x = decoder(x)
+
+        x = self.output_conv(x)
+        output = x + residual
+
+        return output
