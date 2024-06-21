@@ -13,7 +13,7 @@ class MDTA(nn.Module):
     def __init__(self, channels, heads):
         super().__init__()
         self.num_heads = heads
-        self.layer_norm = nn.LayerNorm(channels)
+        self.layer_norm = nn.BatchNorm2d(channels)
         self.scale_parameter = nn.Parameter(torch.ones(1))
 
         self.Q = nn.Sequential(
@@ -55,7 +55,7 @@ class MDTA(nn.Module):
 class GDFN(nn.Module):
     def __init__(self, channels, expansion_factor):
         super().__init__()
-        self.layer_norm = nn.LayerNorm(channels)
+        self.layer_norm = nn.BatchNorm2d(channels)
         self.gating_conv = nn.Sequential(
             nn.Conv2d(channels, channels * expansion_factor, kernel_size=1, stride=1, padding=0, bias=False),
             nn.Conv2d(channels * expansion_factor, channels * expansion_factor, kernel_size=3, stride=1, padding=1, bias=False),
