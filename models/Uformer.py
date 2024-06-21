@@ -200,3 +200,24 @@ class UFormer(BaseModelIR):
             if best_loss > avg_vld_loss:
                 best_loss = avg_vld_loss
                 torch.save(self.state_dict(), os.path.join(configs.save_pth, f"Epoch {epoch + 1}_UFormer.pth"))
+        
+    def evaluate_model(self, valid_dl, criterion, criterion_psnr):
+        """
+        """
+        self.eval()
+        total_vld_loss = 0.0
+        total_vld_psnr_loss = 0.0
+
+        with torch.no_grad():
+            for i, data in tqdm(enumerate(valid_dl)):
+                clean_img, degrad_img = data
+                sr_img = self(degrad_img)
+                mse_loss = criterion(clean_img, sr_img)
+
+                psnr_loss = criterion_psnr(clean_img, sr_img)
+                total_vld_loss += mse_loss.item()
+                total_vld_psnr_loss += psnr_loss.item()
+
+        avg_vld_loss = total_vld_loss / len(valid_dl)
+        avg_vld_psnr_loss = total_vld_psnr_loss / len(valid_dl)
+        return avg_vld_loss, avg_vld_psnr_loss
