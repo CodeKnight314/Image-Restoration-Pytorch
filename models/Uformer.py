@@ -116,7 +116,7 @@ class Upsample(nn.Module):
         output = self.conv(x)
         return output
     
-class UFormer(nn.Module):
+class UFormer(BaseModelIR):
     def __init__(self, input_channels, output_channels, hidden_channels, depths: Tuple[int], heads: Tuple[int]):
         super().__init__()
 
