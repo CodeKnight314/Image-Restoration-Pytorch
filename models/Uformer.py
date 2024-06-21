@@ -2,6 +2,10 @@ import torch
 import torch.nn as nn
 from base_model import BaseModelIR
 from typing import Tuple, float
+from tqdm import tqdm
+import os 
+import configs
+from loss import PSNR 
 
 class W_MSA(nn.Module):
     def __init__(self, channels, num_heads, window_size):
@@ -163,3 +167,36 @@ class UFormer(BaseModelIR):
         output = x + residual
 
         return output
+    
+    def train(self, train_dl, valid_dl, optimizer, criterion, lr_scheduler, epochs, log_writer): 
+        best_loss = float('inf')
+        criterion_psnr = PSNR(maximum_pixel_value=1.0)
+        iteration = 0
+
+        for epoch in range(epochs):
+            self.train()
+            total_tr_loss = 0.0
+            for i, data in tqdm(enumerate(train_dl), total=len(train_dl)):
+                optimizer.zero_grad()
+                
+                clean_img, degra_img = data
+                
+                sr_img = self(degra_img)
+                
+                mse_loss = criterion(clean_img, sr_img)
+                mse_loss.backward()
+                optimizer.step()
+
+                total_tr_loss += mse_loss.item()
+                iteration += 1
+
+            avg_tr_loss = total_tr_loss / len(train_dl)
+            avg_vld_loss, avg_vld_psnr_loss = self.evaluate_model(valid_dl, criterion, criterion_psnr)
+            
+            log_writer.write(epoch=epoch + 1, tr_loss=avg_tr_loss, vld_loss=avg_vld_loss, vld_psnr=avg_vld_psnr_loss)
+            
+            lr_scheduler.step()
+
+            if best_loss > avg_vld_loss:
+                best_loss = avg_vld_loss
+                torch.save(self.state_dict(), os.path.join(configs.save_pth, f"Epoch {epoch + 1}_UFormer.pth"))
