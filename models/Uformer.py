@@ -15,27 +15,27 @@ class W_MSA(nn.Module):
         self.V = nn.Conv2d(channels, self.d_k * self.num_heads, kernel_size=1, stride=1, padding=0)
         self.proj = nn.Conv2d(self.d_k * self.num_heads, channels, kernel_size=1, stride=1, padding=0)
 
-    def window_partition(self, x): 
-        B, C, H, W = x.shape 
+    def window_partition(self, x):
+        B, C, H, W = x.shape
         x = x.reshape(B, H // self.window_size, self.window_size, W // self.window_size, self.window_size, C)
-        x = x.permute(0, 5, 1, 3, 2, 4).contiguous() 
+        x = x.permute(0, 5, 1, 3, 2, 4).contiguous()
         x = x.view(B, C, -1, self.window_size * self.window_size)
         return x
 
-    def window_unpartition(self, x, H, W): 
+    def window_unpartition(self, x, H, W):
         B, _, _, C = x.shape
         x = x.view(B, -1, self.window_size, self.window_size, C)
         x = x.permute(0, 4, 1, 2, 3).contiguous()
         x = x.reshape(B, C, H, W)
         return x
 
-    def attn_map(self, Q, K, V): 
+    def attn_map(self, Q, K, V):
         QK_probs = torch.matmul(Q, K.transpose(-2, -1)) * self.scale
         attn_score = torch.softmax(QK_probs, dim=-1)
         scaled_values = torch.matmul(attn_score, V)
         return scaled_values
-    
-    def forward(self, x): 
+
+    def forward(self, x):
         B, C, H, W = x.shape
         partitioned_inputs = self.window_partition(x)
 
@@ -50,7 +50,6 @@ class W_MSA(nn.Module):
         projection_output = self.proj(unpartioned_output)
 
         return projection_output
-
     
 class LeFF(nn.Module):
     def __init__(self, in_channels, hidden_dim, kernel_size=3):
@@ -62,7 +61,7 @@ class LeFF(nn.Module):
         self.dropout = nn.Dropout(0.1)
 
     def forward(self, x):
-        B, H, W, C = x.shape 
+        B, C, H, W = x.shape 
 
         x = x.view(B * H * W, C)
         x = self.fc1(x)
@@ -75,15 +74,15 @@ class LeFF(nn.Module):
 
         x = self.fc2(x)
         x = self.dropout(x)
-        x = x.view(B, H, W, C)
+        x = x.view(B, C, H, W)
         
         return x
     
 class LeWinTransformerBlock(nn.Module):
     def __init__(self, channels, num_heads, window_size, hidden_dim):
         super(LeWinTransformerBlock, self).__init__()
-        self.norm1 = nn.LayerNorm(channels)
-        self.norm2 = nn.LayerNorm(channels)
+        self.norm1 = nn.BatchNorm2d(channels)
+        self.norm2 = nn.BatchNorm2d(channels)
         self.w_msa = W_MSA(channels, num_heads, window_size)
         self.leff = LeFF(channels, hidden_dim)
 
