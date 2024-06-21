@@ -56,27 +56,21 @@ class W_MSA(nn.Module):
 class LeFF(nn.Module):
     def __init__(self, in_channels, hidden_dim, kernel_size=3):
         super(LeFF, self).__init__()
-        self.fc1 = nn.Linear(in_channels, hidden_dim)
+        self.fc1 = nn.Conv2d(in_channels, hidden_dim, kernel_size=1, stride=1, padding=0)
         self.dw_conv = nn.Conv2d(hidden_dim, hidden_dim, kernel_size=kernel_size, padding=kernel_size // 2, groups=hidden_dim)
-        self.fc2 = nn.Linear(hidden_dim, in_channels)
+        self.fc2 = nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, stride=1, padding=0)
         self.act = nn.GELU()
         self.dropout = nn.Dropout(0.1)
 
     def forward(self, x):
-        B, C, H, W = x.shape 
-
-        x = x.view(B * H * W, C)
         x = self.fc1(x)
         x = self.act(x)
-        x = x.view(B, H, W, -1).permute(0, 3, 1, 2)  
 
         x = self.dw_conv(x)
         x = self.act(x)
-        x = x.permute(0, 2, 3, 1).view(B * H * W, -1)  
 
         x = self.fc2(x)
         x = self.dropout(x)
-        x = x.view(B, C, H, W)
         
         return x
     
@@ -87,6 +81,7 @@ class LeWinTransformerBlock(nn.Module):
         self.norm2 = nn.BatchNorm2d(channels)
         self.w_msa = W_MSA(channels, num_heads, window_size)
         self.leff = LeFF(channels, hidden_dim)
+        self.skip_conv = nn.Conv2d(channels, hidden_dim, kernel_size=1, stride=1, padding=0)
 
     def forward(self, x):
         shortcut = x
@@ -97,7 +92,7 @@ class LeWinTransformerBlock(nn.Module):
         shortcut = x
         x = self.norm2(x)
         x = self.leff(x)
-        x = x + shortcut
+        x = x + self.skip_conv(shortcut)
 
         return x
     
@@ -136,24 +131,12 @@ class UFormer(nn.Module):
         self.upsamples = nn.ModuleList()
 
         for i in range(4):
-            self.encoders.append(
-                nn.Sequential(
-                    LeWinTransformerBlock(hidden_channels * 2 ** i, heads[i], 8, hidden_channels * 2 ** i)
-                )
-            )
-            if i < 3:  
-                self.downsamples.append(Downsample(hidden_channels * 2 ** i))
+            self.encoders.append(nn.Sequential(*[LeWinTransformerBlock(hidden_channels * 2 ** i, heads[i], 8, hidden_channels * 2 ** i)]))
+            self.decoders.insert(0, nn.Sequential(*[LeWinTransformerBlock(hidden_channels * 2 ** (i+1), heads[i], 8, hidden_channels * 2 ** i)]))
+            self.downsamples.append(Downsample(hidden_channels * 2 ** i))
+            self.upsamples.insert(0, Upsample(hidden_channels * 2 ** (i+1)))
 
-            if i > 0:  
-                self.decoders.insert(0,
-                    nn.Sequential(
-                        LeWinTransformerBlock(hidden_channels * 2 ** (i), heads[i], 8, hidden_channels * 2 ** (i - 1))
-                    )
-                )
-            if i > 0:  
-                self.upsamples.insert(0,
-                    Upsample(hidden_channels * 2 ** i)
-                )
+        self.bottleneck = nn.Sequential(*[LeWinTransformerBlock(hidden_channels * 2 ** 4, heads[-1], 8, hidden_channels * 2 ** 4) for _ in range(depths[-1])])
 
         self.output_conv = nn.Conv2d(hidden_channels, output_channels, kernel_size=3, stride=1, padding=1)
 
@@ -166,13 +149,14 @@ class UFormer(nn.Module):
 
         for i, encoder in enumerate(self.encoders):
             x = encoder(x)
-            skips.append(x)
-            if i < len(self.downsamples):  
-                x = self.downsamples[i](x)
+            skips.insert(0, x)
+            x = self.downsamples[i](x)
+
+        x = self.bottleneck(x)
 
         for i, decoder in enumerate(self.decoders):
             x = self.upsamples[i](x)
-            x = torch.cat([x, skips[-(i + 2)]], dim=1)
+            x = torch.cat((x, skips[i]), dim=1)
             x = decoder(x)
 
         x = self.output_conv(x)
