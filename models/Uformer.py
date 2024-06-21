@@ -120,3 +120,24 @@ class Upsample(nn.Module):
     def forward(self, x): 
         output = self.conv(x)
         return output
+    
+class UFormer(nn.Module):
+    def __init__(self, input_channels, output_channels, hidden_channels, depths : Tuple[int], heads : Tuple[int]): 
+        super().__init__() 
+
+        self.input_conv = nn.Sequential(*[nn.Conv2d(input_channels, hidden_channels, kernel_size=3), 
+                                          nn.LeakyReLU()])
+
+        self.encoders = nn.ModuleList()
+        self.downsamples = nn.ModuleList()
+        self.decoders = nn.ModuleList()
+        self.upsamples = nn.ModuleList()
+
+        for i in range(4): 
+            self.encoders.append(nn.Sequential(*[LeWinTransformerBlock(hidden_channels * 2 ** i, heads[i], 8, hidden_channels * 2 ** i)]))
+            self.decoders.append(nn.Sequential(*[LeWinTransformerBlock(hidden_channels * 2 ** (i+1), heads[i], 8, hidden_channels * 2 ** i)]))
+            
+            self.downsamples.append(Downsample(hidden_channels * 2 ** i))
+            self.upsamples.append(Upsample(hidden_channels * 2 ** i))
+
+        self.output_conv = nn.Conv2d(hidden_channels, output_channels, kernel_size=3, stride=1, padding=1)
