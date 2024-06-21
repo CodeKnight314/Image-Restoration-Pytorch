@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+from base_model import BaseModelIR
+from typing import Tuple, float
 
 class W_MSA(nn.Module):
     def __init__(self, channels, num_heads, window_size):
@@ -98,3 +100,23 @@ class LeWinTransformerBlock(nn.Module):
         x = x + shortcut
 
         return x
+    
+class Downsample(nn.Module): 
+    def __init__(self, channels): 
+        super().__init__() 
+
+        self.conv = nn.Conv2d(channels, channels * 2, kernel_size=4, stride=2, padding=1)
+
+    def forward(self, x): 
+        output = self.conv(x)
+        return output
+
+class Upsample(nn.Module): 
+    def __init__(self, channels): 
+        super().__init__() 
+
+        self.conv = nn.ConvTranspose2d(channels, channels // 2, kernel_size=4, stride=2, padding=1)
+
+    def forward(self, x): 
+        output = self.conv(x)
+        return output
