@@ -75,3 +75,4 @@ class BaseModelIR(nn.Module):
         avg_loss = total_loss / len(test_loader)   
 
         return avg_loss
+    
