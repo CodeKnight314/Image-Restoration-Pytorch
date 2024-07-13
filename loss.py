@@ -7,7 +7,7 @@ class PSNR(nn.Module):
     """
     Implementation of PSNR Calculation for image tensors.
     """
-    def __init__(self, maximum_pixel_value): 
+    def __init__(self, maximum_pixel_value=1.0): 
         """
         Initializes the PSNR Calculation module. 
 
@@ -15,7 +15,7 @@ class PSNR(nn.Module):
             maximum_pixel_value (float): maximum pixel value of the input tensors for PSNR calculation.
         """
         super().__init__()
-        self.me_loss = MSE_Loss()
+        self.me_loss = nn.MSELoss()
         self.max_value = maximum_pixel_value
 
     def forward(self, clean_img, sr_img): 
