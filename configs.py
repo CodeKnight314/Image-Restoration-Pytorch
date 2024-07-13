@@ -31,10 +31,6 @@ def main():
     if not os.path.exists(save_pth): 
         os.makedirs(save_pth)
         print("[INFO] Creating save path directory.")
-    
-    if not os.path.exists(heatmaps):
-        os.makedirs(heatmaps)
-        print("[INFO] Creating Heat map directory.")
 
 if __name__ == "__main__": 
     main()
