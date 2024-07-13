@@ -10,7 +10,7 @@ class DnCNN(BaseModelIR):
                                                 nn.ReLU())
         
         layers = [] 
-        for _ in range(num_layers):
+        for _ in range(num_layers - 2):
             layers.append(nn.Conv2d(hidden_channels, hidden_channels, kernel_size=3, stride=1, padding=1))
             layers.append(nn.BatchNorm2d(hidden_channels))
             layers.append(nn.ReLU())
@@ -24,7 +24,7 @@ class DnCNN(BaseModelIR):
         out = self.feature_extraction(x)
         out = self.conv_backbone(out)
         out = self.feature_reconstruction(out)
-        return residual - out 
+        return residual + out 
     
     def train_model(self, train_dl, valid_dl, optimizer, lr_scheduler, epochs, warmup, log_writer: LOGWRITER):
         return super().train_model(train_dl, valid_dl, optimizer, lr_scheduler, epochs, warmup, log_writer)
