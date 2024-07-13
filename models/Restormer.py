@@ -4,10 +4,9 @@ from base_model import BaseModelIR
 from utils.log_writer import LOGWRITER
 from tqdm import tqdm
 from loss import *
-from utils.visualization import rgb_to_ycbcr, ycbcr_to_rgb
 import os
 import configs
-from dataset.dataset import load_dataset
+from dataset import load_dataset
 
 class MDTA(nn.Module):
     def __init__(self, channels, heads):
@@ -135,10 +134,11 @@ class Restormer(BaseModelIR):
         output = x + residual
         return output
     
-    def train_model(self, train_dl, valid_dl, optimizer, criterion, lr_scheduler, epochs, log_writer: LOGWRITER):
+    def train_model(self, train_dl, valid_dl, optimizer, lr_scheduler, epochs, warmup, log_writer: LOGWRITER):
         """
         """
         best_loss = float('inf')
+        criterion = MSE_Loss()
         criterion_psnr = PSNR(maximum_pixel_value=1.0)
         iteration = 0
 

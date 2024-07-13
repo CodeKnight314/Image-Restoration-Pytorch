@@ -3,6 +3,7 @@ import torch.nn as nn
 from tqdm import tqdm 
 from utils.log_writer import LOGWRITER 
 from utils.visualization import *
+import configs
 
 class BaseModelIR(nn.Module): 
     def __init__(self):
@@ -35,7 +36,7 @@ class BaseModelIR(nn.Module):
 
         return loss.item()
     
-    def train_model(self, train_dl, valid_dl, optimizer, criterion, lr_scheduler, epochs, log_writer: LOGWRITER): 
+    def train_model(self, train_dl, valid_dl, optimizer, criterion, lr_scheduler, epochs, warmup, log_writer: LOGWRITER): 
         """
         """
         best_loss = float("inf")
@@ -51,8 +52,8 @@ class BaseModelIR(nn.Module):
             avg_train_loss = total_train_loss / len(train_dl)
             avg_valid_loss = self.evaluate_model(valid_dl, criterion)
 
-            if lr_scheduler:
-                lr_scheduler.step(avg_valid_loss)
+            if lr_scheduler and epoch > warmup:
+                lr_scheduler.step()
 
             log_writer.write(epoch=epoch, avg_train_loss=avg_train_loss, avg_valid_loss=avg_valid_loss)
 
