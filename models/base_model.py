@@ -4,6 +4,7 @@ from tqdm import tqdm
 from utils.log_writer import LOGWRITER 
 from utils.visualization import *
 from loss import PSNR
+import configs
 
 class BaseModelIR(nn.Module): 
     def __init__(self):
@@ -51,7 +52,7 @@ class BaseModelIR(nn.Module):
             self.train()
             total_train_loss = 0.0
 
-            for i, data in tqdm(enumerate(train_dl), total=len(train_dl)):
+            for i, data in tqdm(enumerate(train_dl), desc=f"Training Epoch {epoch}/{epochs}"):
                 tr_loss = self.train_step(criterion=criterion, data=data, optimizer=optimizer)
                 total_train_loss += tr_loss
 
@@ -65,7 +66,7 @@ class BaseModelIR(nn.Module):
 
             if avg_valid_loss < best_loss:
                 best_loss = avg_valid_loss
-                torch.save(self.state_dict(), 'best_model.pth')
+                torch.save(self.state_dict(), os.path.join(configs.save_pth,f'best_model_EPOCH_{epoch}.pth'))
 
     def evaluate_model(self, test_loader, criterion, criterion_psnr): 
         """
@@ -76,7 +77,7 @@ class BaseModelIR(nn.Module):
         total_psnr = 0.0
         
         with torch.no_grad(): 
-            for i, data in tqdm(enumerate(test_loader), total=len(test_loader)):
+            for i, data in tqdm(enumerate(test_loader), desc="Validating Epoch"):
                 loss, psnr = self.eval_step(data, criterion, criterion_psnr)
                 total_loss += loss
                 total_psnr += psnr
