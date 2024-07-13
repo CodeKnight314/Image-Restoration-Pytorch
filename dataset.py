@@ -22,8 +22,7 @@ class ImageDataset(Dataset):
         if transforms: 
             self.transforms = transforms
         else: 
-            self.transforms = T.Compose([T.ToTensor(), 
-                                         T.Normalize(mean = [0.4488, 0.4371, 0.4040], std = [0.2347, 0.2289, 0.2329])])
+            self.transforms = T.Compose([T.ToTensor()])
 
     def __len__(self): 
         """
