@@ -20,10 +20,11 @@ class DnCNN(BaseModelIR):
         self.feature_reconstruction = nn.Conv2d(hidden_channels, output_channels, kernel_size=3, stride=1, padding=1)
 
     def forward(self, x): 
+        residual = x
         out = self.feature_extraction(x)
         out = self.conv_backbone(out)
         out = self.feature_reconstruction(out)
-        return out 
+        return residual - out 
     
     def train_model(self, train_dl, valid_dl, optimizer, criterion, lr_scheduler, epochs, warmup, log_writer: LOGWRITER):
         return super().train_model(train_dl, valid_dl, optimizer, criterion, lr_scheduler, epochs, log_writer)
