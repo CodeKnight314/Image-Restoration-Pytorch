@@ -1,0 +1,15 @@
+{
+    "patch_size":224, 
+    "batch_size":32,
+    "epochs":100, 
+    "optimizer":"AdamW",
+    "lr":1e-4,
+    "weight decay":1e-4,
+    "scheduler":"CosineAnnealingLR",
+    "t_max":50, 
+    "eta_min":1e-6,
+    "input_channels":3,
+    "output_channels":3, 
+    "hidden_channels":512, 
+    "num_layers":12
+}
