@@ -36,10 +36,12 @@ class BaseModelIR(nn.Module):
 
         return loss.item()
     
-    def train_model(self, train_dl, valid_dl, optimizer, criterion, lr_scheduler, epochs, warmup, log_writer: LOGWRITER): 
+    def train_model(self, train_dl, valid_dl, optimizer, lr_scheduler, epochs, warmup, log_writer: LOGWRITER): 
         """
         """
         best_loss = float("inf")
+
+        criterion = nn.MSELoss()
 
         for epoch in range(1, epochs + 1):
             self.train()

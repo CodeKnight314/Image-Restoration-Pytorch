@@ -1,6 +1,6 @@
 import torch 
 import torch.nn as nn 
-from base_model import BaseModelIR
+from .base_model import BaseModelIR
 from utils.log_writer import LOGWRITER
 from tqdm import tqdm
 from loss import *
