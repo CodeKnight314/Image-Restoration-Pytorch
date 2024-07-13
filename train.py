@@ -38,7 +38,6 @@ def main():
     
     print(f"[INFO] Training Dataloader loaded with {len(train_dl)} batches.")
     print(f"[INFO] Validation Dataloader loaded with {len(valid_dl)} batches.")
-    print(f"[INFO] Total number of classes: {configs.num_class}")
 
     if args.model == "Restormer": 
         model = Restormer.Restormer(input_channels=model_config.get("input_channels"), 
