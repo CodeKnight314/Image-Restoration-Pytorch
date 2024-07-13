@@ -1,123 +1,102 @@
 import torch 
-import torch.nn as nn 
 import configs
-from tqdm import tqdm
-import os
-from utils.visualization import *
-from torch.utils.data import DataLoader
+import argparse 
+import json
+from dataset import load_dataset
+from loss import MSE_Loss
+from models import Restormer, DnCNN
+import torch.optim as opt
+import torch.multiprocessing as mp
+from utils.log_writer import LOGWRITER
 
-def train_step(model: nn.Module, criterion: nn.Module, data: tuple[torch.Tensor, torch.Tensor], optimizer: torch.optim.Optimizer) -> float:
-    """
-    Performs a single training step for the given model.
+def load_config(config_file):
+    with open(config_file, 'r') as f:
+        config = json.load(f)
+    return config
 
-    Args:
-        model (nn.Module): The neural network model being trained.
-        criterion (nn.Module): The loss function used for training.
-        data (tuple): A tuple containing the clean and degraded images.
-        optimizer (torch.optim.Optimizer): The optimizer used for updating the model weights.
+def main():
+    parser = argparse.ArgumentParser(description='Train a model on CIFAR-10')
+    parser.add_argument('--model', type=str, required=True, choices=['ViT', 'ResNet18', 'ResNet34','HCVIT', 'MobileNet'], help='Model name')
+    parser.add_argument('--model_save_path', type=str, help='Path to save or load model weights')
+    parser.add_argument('--root_dir', type=str, required=True, help="Root directory to Dataset. Must contain a train and test folder in root directory.")
+    parser.add_argument('--config_file', type=str, required=True, default='config.json', help='Path to configuration file')
 
-    Returns:
-        float: The loss value for this training step.
-    """
-    optimizer.zero_grad()
+    args = parser.parse_args()
     
-    clean_img, degraded_img = data
+    model_config = load_config(args.config_file)
+
+    # Declaring DataLoaders
+    train_dl = load_dataset(root_dir=args.root_dir, 
+                            patch_size=model_config.get('patch_size'),
+                            batch_size=model_config.get('batch_size'),
+                            mode="train")
     
-    sr_img = model(degraded_img)
+    valid_dl = load_dataset(root_dir=args.root_dir, 
+                            patch_size=model_config.get('patch_size'), 
+                            batch_size=model_config.get('batch_size'),
+                            mode="val")
     
-    loss = criterion(clean_img, sr_img)
+    print(f"[INFO] Training Dataloader loaded with {len(train_dl)} batches.")
+    print(f"[INFO] Validation Dataloader loaded with {len(valid_dl)} batches.")
+    print(f"[INFO] Total number of classes: {configs.num_class}")
+
+    if args.model == "Restormer": 
+        model = Restormer.Restormer(input_channels=model_config.get("input_channels"), 
+                                    output_channels=model_config.get("output_channels"), 
+                                    channels=model_config.get("channels"),
+                                    num_levels=model_config.get("num_levels"), 
+                                    num_transformers=model_config.get("num_transformers"),
+                                    num_heads=model_config.get("num_heads"),
+                                    expansion_factor=model_config.get("expansion_factor"))
+        print("[INFO] Restormer model loaded")
+    elif args.model == "DnCNN": 
+        model = DnCNN.DnCNN(input_channels=model_config.get("input_channels"),
+                            hidden_channels=model_config.get("hidden_channels"),
+                            output_channels=model_config.get("output_channels"),
+                            num_layers=model_config.get("num_layers"))
+        print("[INFO] DnCNN model loaded")
     
-    loss.backward()
-    optimizer.step()
-    
-    return loss.item()
+    if args.model_save_path:
+        print("[INFO] Model weights provided. Attempting to load model weights.")
+        try:
+            model.load_state_dict(torch.load(args.model_save_path), strict=False)
+            print("[INFO] Model weights loaded successfully with strict=False.")
+        except RuntimeError as e:
+            print(f"[WARNING] Runtime error occurred while loading some model weights: {e}")
+        except FileNotFoundError as e:
+            print(f"[ERROR] File not found error occurred: {e}")
+        except Exception as e:
+            print(f"[ERROR] An unexpected error occurred while loading model weights: {e}")
+    else:
+        print("[INFO] No model weights path provided. Training from scratch.")
+            
+    if model_config.get("optimizer") == 'AdamW':
+        optimizer = opt.AdamW(model.parameters(), lr=model_config.get("lr"), weight_decay=model_config.get("weight decay"))
+    elif model_config.get("optimizer") == 'SGD':
+        optimizer = opt.SGD(model.parameters(), lr=model_config.get("lr"), weight_decay=model_config.get("weight decay"), momentum=0.9)
+    print(f"[INFO] Optimizer loaded with learning rate: {model_config.get('lr')}.")
 
-def valid_step(model: nn.Module, criterion: nn.Module, data: tuple[torch.Tensor, torch.Tensor], criterion_psnr: nn.Module) -> tuple[float, float]:
-    """
-    Performs a single validation step for the given model.
+    if model_config.get("scheduler") == 'CosineAnnealingLR':
+        scheduler = opt.lr_scheduler.CosineAnnealingLR(optimizer, T_max=model_config.get("t_max"), eta_min=model_config.get("eta_min"))
+    elif model_config.get("scheduler") == 'StepLR':
+        scheduler = opt.lr_scheduler.StepLR(optimizer, step_size=model_config.get("step_size"), gamma=model_config.get("gamma"))
+    print(f"[INFO] {model_config.get('scheduler')} Scheduler loaded.")
 
-    Args:
-        model (nn.Module): The neural network model being validated.
-        criterion (nn.Module): The loss function used for validation.
-        data (tuple): A tuple containing the clean and degraded images.
-        criterion_psnr (nn.Module): The PSNR criterion for evaluating image quality.
+    logger = LOGWRITER(output_directory=configs.log_output_dir, total_epochs=model_config.get('epochs'))
+    print(f"[INFO] Log writer loaded and binded to {configs.log_output_dir}")
+    print(f"[INFO] Total epochs: {model_config.get('epochs')}")
+    print(f"[INFO] Warm Up Phase: {model_config.get('warm_up_epochs')} epochs")
 
-    Returns:
-        tuple: The loss and PSNR values for this validation step.
-    """
-    clean_img, degraded_img = data
-    
-    sr_img = model(degraded_img)
-    
-    loss = criterion(clean_img, sr_img)
+    configs.trial_directory()
 
-    clean_img_YCbCr = rgb_to_ycbcr(clean_img)
-    clean_img_Y = clean_img_YCbCr[:, 0, :, :]
+    model.train(train_dl=train_dl, 
+                valid_dl=valid_dl, 
+                optimizer=optimizer, 
+                lr_scheduler=scheduler, 
+                epochs=model_config.get('epochs'), 
+                warmup=model_config.get('warm_up_epochs'),
+                log_writer=logger)
 
-    sr_img_YCbCr = rgb_to_ycbcr(sr_img)
-    sr_img_Y = sr_img_YCbCr[:, 0, :, :]
-    
-    psnr = criterion_psnr(clean_img_Y, sr_img_Y)
-    
-    return loss.item(), psnr.item()
-
-def train(model: nn.Module, criterion: nn.Module, criterion_psnr: nn.Module, train_dl: DataLoader, valid_dl: DataLoader, optimizer: torch.optim.Optimizer, scheduler: torch.optim.lr_scheduler._LRScheduler, epochs: int, log_writer: object): 
-    """
-    Trains and validates the model over a specified number of epochs.
-
-    Args:
-        model (nn.Module): The neural network model being trained.
-        criterion (nn.Module): The loss function used for training.
-        criterion_psnr (nn.Module): The PSNR criterion for evaluating image quality.
-        train_dl (DataLoader): DataLoader for the training dataset.
-        valid_dl (DataLoader): DataLoader for the validation dataset.
-        optimizer (torch.optim.Optimizer): The optimizer used for updating the model weights.
-        scheduler (torch.optim.lr_scheduler._LRScheduler): The learning rate scheduler.
-        epochs (int): The number of epochs to train the model for.
-        log_writer (object): An object for logging training and validation metrics.
-
-    """
-    best_loss = float("inf")
-    
-    model.to(configs.device)
-
-    for epoch in range(1, epochs + 1):
-        model.train()
-        total_train_loss = 0.0
-
-        for i, data in tqdm(enumerate(train_dl), total=len(train_dl)):
-            tr_loss = train_step(model, criterion=criterion, data=data, optimizer=optimizer)
-            total_train_loss += tr_loss
-
-        model.eval()
-        total_valid_loss = 0.0
-        total_valid_psnr = 0.0
-
-        with torch.no_grad():
-            for i, data in tqdm(enumerate(valid_dl), total=len(valid_dl)):
-                valid_loss, valid_psnr = valid_step(model=model, criterion=criterion, data=data, criterion_psnr=criterion_psnr)
-                total_valid_loss += valid_loss
-                total_valid_psnr += valid_psnr
-
-        avg_train_loss = total_train_loss / len(train_dl)
-        avg_valid_loss = total_valid_loss / len(valid_dl)
-        avg_valid_psnr = total_valid_psnr / len(valid_dl)
-
-        if avg_valid_loss < best_loss:
-            best_loss = avg_valid_loss
-            save_path = os.path.join(configs.save_path, f"Best_model_{epoch}.pth")
-            torch.save(model.state_dict(), save_path)
-
-        if epoch > configs.warm_up_phase:
-            scheduler.step()
-
-        log_writer.write(epoch=epoch, tr_loss=avg_train_loss, vl_loss=avg_valid_loss, vl_psnr=avg_valid_psnr)
-
-
-def main(): 
-    """
-    """
-    configs.main()
-
-if __name__ == "__main__": 
+if __name__ == "__main__":
+    mp.set_start_method('spawn')
     main()
