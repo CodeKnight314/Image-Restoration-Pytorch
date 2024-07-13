@@ -145,7 +145,7 @@ class Restormer(BaseModelIR):
         for epoch in range(epochs):
             self.train()
             total_tr_loss = 0.0
-            for i, data in tqdm(enumerate(train_dl), total=len(train_dl)):
+            for i, data in tqdm(enumerate(train_dl), desc=f"Training Epoch {epoch}/{epochs}"):
                 optimizer.zero_grad()
                 
                 clean_img, degra_img = data
@@ -164,8 +164,9 @@ class Restormer(BaseModelIR):
             
             log_writer.write(epoch=epoch + 1, tr_loss=avg_tr_loss, vld_loss=avg_vld_loss, vld_psnr=avg_vld_psnr_loss)
             
-            lr_scheduler.step()
-
+            if lr_scheduler and epoch > warmup:
+                lr_scheduler.step()
+                
             if best_loss > avg_vld_loss:
                 best_loss = avg_vld_loss
                 torch.save(self.state_dict(), os.path.join(configs.save_pth, f"Epoch {epoch + 1}_RESTORMER.pth"))
