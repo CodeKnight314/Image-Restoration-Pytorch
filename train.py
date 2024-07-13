@@ -16,7 +16,7 @@ def load_config(config_file):
 
 def main():
     parser = argparse.ArgumentParser(description='Train a model on CIFAR-10')
-    parser.add_argument('--model', type=str, required=True, choices=['ViT', 'ResNet18', 'ResNet34','HCVIT', 'MobileNet'], help='Model name')
+    parser.add_argument('--model', type=str, required=True, choices=['Restormer', 'DnCNN'], help='Model name')
     parser.add_argument('--model_save_path', type=str, help='Path to save or load model weights')
     parser.add_argument('--root_dir', type=str, required=True, help="Root directory to Dataset. Must contain a train and test folder in root directory.")
     parser.add_argument('--config_file', type=str, required=True, default='config.json', help='Path to configuration file')
@@ -86,9 +86,11 @@ def main():
     print(f"[INFO] Total epochs: {model_config.get('epochs')}")
     print(f"[INFO] Warm Up Phase: {model_config.get('warm_up_epochs')} epochs")
 
-    configs.trial_directory()
+    configs.main()
 
-    model.train(train_dl=train_dl, 
+    model.to(configs.device)
+
+    model.train_model(train_dl=train_dl, 
                 valid_dl=valid_dl, 
                 optimizer=optimizer, 
                 lr_scheduler=scheduler, 
