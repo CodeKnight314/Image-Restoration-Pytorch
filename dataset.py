@@ -9,7 +9,7 @@ import configs
 class ImageDataset(Dataset): 
     """
     """
-    def __init__(self, clean_dir, degradation_dirs, patch_size, transforms, v_threshold, h_threshold): 
+    def __init__(self, clean_dir, degradation_dirs, patch_size, v_threshold, h_threshold, transforms=None): 
         self.clean_dir = sorted(glob(os.path.join(clean_dir, "/*")))
         self.degra_dir = sorted(glob(os.path.join(degradation_dirs, "/*")))
         self.patch_size = patch_size
@@ -17,23 +17,26 @@ class ImageDataset(Dataset):
         self.v_threshold = v_threshold 
         self.h_threhshold = h_threshold
 
+        self.device = configs.device
+
         if transforms: 
             self.transforms = transforms
         else: 
-            self.transforms = T.Compose([T.ToTensor(), T.Normalize(mean = [], std = [])])
+            self.transforms = T.Compose([T.ToTensor(), 
+                                         T.Normalize(mean = [0.4488, 0.4371, 0.4040], std = [0.2347, 0.2289, 0.2329])])
 
     def __len__(self): 
         """
         """
         return len(self.clean_dir)
     
-    def getitem(self, index): 
+    def __getitem__(self, index): 
         """
         """
         clean_img = self.transforms(Image.open(self.clean_dir[index]).convert("RGB"))
         degra_img = self.transforms(Image.open(self.degra_dir[index]).convert("RGB"))
 
-        img_w, img_h = clean_img.shape[1], clean_img[2]
+        img_w, img_h = clean_img.shape[1], clean_img.shape[2]
         d_img_w, d_img_h = degra_img.shape[1], degra_img.shape[2]
 
         for dim in [img_w, img_h, d_img_h, d_img_w]: 
@@ -52,19 +55,18 @@ class ImageDataset(Dataset):
             clean_img = T.functional.hflip(clean_img)
             degra_img = T.functional.hflip(degra_img)
 
-        return clean_img, degra_img
+        return clean_img.to(self.device), degra_img.to(self.device)
     
 def load_dataset(root_dir, patch_size, batch_size, shuffle=True, mode="train"):
     """
     """
     assert mode in ["train", "val", "test"], f"[ERROR] Invalid mode for dataset. Mode {mode} is not available."
-    clean_dir = os.path.join(root_dir, mode + "/clean")
-    degraded_dir = os.path.join(root_dir, mode + "/degraded")
+    clean_dir = os.path.join(root_dir, os.path.join(mode, "clean"))
+    degraded_dir = os.path.join(root_dir, os.path.join(mode, "degraded"))
     dataset = ImageDataset(clean_dir=clean_dir, 
                         degradation_dirs=degraded_dir, 
                         patch_size=patch_size, 
                         v_threshold=0.25, 
-                        h_threshold=0.25, 
-                        mode=mode)
+                        h_threshold=0.25)
     
     return DataLoader(dataset=dataset, batch_size=batch_size, shuffle=shuffle, drop_last=False)
