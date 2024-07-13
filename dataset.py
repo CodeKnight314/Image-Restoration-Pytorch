@@ -1,5 +1,3 @@
-import torch 
-import torch.nn as nn 
 import os 
 import random 
 from torch.utils.data import Dataset, DataLoader
@@ -11,7 +9,7 @@ import configs
 class ImageDataset(Dataset): 
     """
     """
-    def __init__(self, clean_dir, degradation_dirs, patch_size, transforms, v_threshold, h_threshold, mode): 
+    def __init__(self, clean_dir, degradation_dirs, patch_size, transforms, v_threshold, h_threshold): 
         self.clean_dir = sorted(glob(os.path.join(clean_dir, "/*")))
         self.degra_dir = sorted(glob(os.path.join(degradation_dirs, "/*")))
         self.patch_size = patch_size
@@ -56,12 +54,14 @@ class ImageDataset(Dataset):
 
         return clean_img, degra_img
     
-def load_dataset(patch_size, batch_size, shuffle, mode):
+def load_dataset(root_dir, patch_size, batch_size, shuffle=True, mode="train"):
     """
     """
-    assert mode in ["train", "val", "test"], "[ERROR] Invalid dataset mode"
-    dataset = ImageDataset(clean_dir=configs.clean_dir, 
-                        degradation_dirs=configs.degradation_dir, 
+    assert mode in ["train", "val", "test"], f"[ERROR] Invalid mode for dataset. Mode {mode} is not available."
+    clean_dir = os.path.join(root_dir, mode + "/clean")
+    degraded_dir = os.path.join(root_dir, mode + "/degraded")
+    dataset = ImageDataset(clean_dir=clean_dir, 
+                        degradation_dirs=degraded_dir, 
                         patch_size=patch_size, 
                         v_threshold=0.25, 
                         h_threshold=0.25, 
