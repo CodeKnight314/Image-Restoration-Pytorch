@@ -84,7 +84,7 @@ def main():
     logger = LOGWRITER(output_directory=configs.log_output_dir, total_epochs=model_config.get('epochs'))
     print(f"[INFO] Log writer loaded and binded to {configs.log_output_dir}")
     print(f"[INFO] Total epochs: {model_config.get('epochs')}")
-    print(f"[INFO] Warm Up Phase: {model_config.get('warm_up_epochs')} epochs")
+    print(f"[INFO] Warm Up Phase: {model_config.get('warmup')} epochs")
 
     configs.main()
 
@@ -95,7 +95,7 @@ def main():
                 optimizer=optimizer, 
                 lr_scheduler=scheduler, 
                 epochs=model_config.get('epochs'), 
-                warmup=model_config.get('warm_up_epochs'),
+                warmup=model_config.get('warmup'),
                 log_writer=logger)
 
 if __name__ == "__main__":

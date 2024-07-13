@@ -29,5 +29,5 @@ class DnCNN(BaseModelIR):
     def train_model(self, train_dl, valid_dl, optimizer, lr_scheduler, epochs, warmup, log_writer: LOGWRITER):
         return super().train_model(train_dl, valid_dl, optimizer, lr_scheduler, epochs, warmup, log_writer)
     
-    def evaluate_model(self, test_loader, criterion):
-        return super().evaluate_model(test_loader, criterion)
+    def evaluate_model(self, test_loader, criterion, criterion_psnr):
+        return super().evaluate_model(test_loader, criterion, criterion_psnr)
