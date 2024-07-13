@@ -11,20 +11,7 @@ def count_folders_with_prefix(directory, prefix):
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-clean_image_dir = ""
-
-degraded_image_dir = ""
-
-image_height = 128 
-image_width = 128 
-
-lr = 1e-4 
-weight_decay = 1e-3
-
 model_pth = None 
-
-warm_up_phase = 15
-epoch = 100
 
 base_path = ""
 prefix = "Trial"
