@@ -10,6 +10,7 @@ import configs
 class BaseTrainerIR(): 
     def __init__(self):
         super().__init__()
+        self.device = configs.device
     
     def train_step(self, model, optimizer, data, criterion):
         """
@@ -18,6 +19,7 @@ class BaseTrainerIR():
         optimizer.zero_grad()
     
         clean_img, degraded_img = data
+        clean_img, degraded_img = clean_img.to(self.device), degraded_img.to(self.device)
         
         sr_img = model(degraded_img)
         
@@ -33,6 +35,8 @@ class BaseTrainerIR():
         Perform a single evaluation step.
         """
         clean_img, degraded_img = data
+        clean_img, degraded_img = clean_img.to(self.device), degraded_img.to(self.device)
+
 
         sr_img = model(degraded_img)
 

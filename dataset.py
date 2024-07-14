@@ -54,7 +54,7 @@ class ImageDataset(Dataset):
             clean_img = T.functional.hflip(clean_img)
             degra_img = T.functional.hflip(degra_img)
 
-        return clean_img.to(self.device), degra_img.to(self.device)
+        return clean_img, degra_img
     
 def load_dataset(root_dir, patch_size, batch_size, shuffle=True, mode="train"):
     """
@@ -68,4 +68,4 @@ def load_dataset(root_dir, patch_size, batch_size, shuffle=True, mode="train"):
                         v_threshold=0.25, 
                         h_threshold=0.25)
     
-    return DataLoader(dataset=dataset, batch_size=batch_size, shuffle=shuffle, drop_last=False, num_workers=os.cpu_count()//2)
+    return DataLoader(dataset=dataset, batch_size=batch_size, shuffle=shuffle, drop_last=False, num_workers=4)
