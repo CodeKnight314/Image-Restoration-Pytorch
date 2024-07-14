@@ -68,4 +68,4 @@ def load_dataset(root_dir, patch_size, batch_size, shuffle=True, mode="train"):
                         v_threshold=0.25, 
                         h_threshold=0.25)
     
-    return DataLoader(dataset=dataset, batch_size=batch_size, shuffle=shuffle, drop_last=False)
+    return DataLoader(dataset=dataset, batch_size=batch_size, shuffle=shuffle, drop_last=False, num_workers=os.cpu_count()//2)

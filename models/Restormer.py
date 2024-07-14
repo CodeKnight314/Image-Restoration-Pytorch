@@ -1,6 +1,6 @@
 import torch 
 import torch.nn as nn 
-from .base_model import BaseModelIR
+from .base_model import BaseTrainerIR
 from utils.log_writer import LOGWRITER
 from tqdm import tqdm
 from loss import *
@@ -85,7 +85,7 @@ class TransformerBlock(nn.Module):
         x = self.GDFN(x) + x
         return x
 
-class Restormer(BaseModelIR):
+class Restormer(nn.Module):
     def __init__(self, input_channels, output_channels, channels, num_levels, num_transformers, num_heads, expansion_factor):
         super().__init__()
         self.feature_extraction_conv = nn.Conv2d(input_channels, channels[0], kernel_size=3, stride=1, padding=1, bias=False)
@@ -133,24 +133,26 @@ class Restormer(BaseModelIR):
         x = self.feature_reconstruction(x)
         output = x + residual
         return output
-    
-    def train_model(self, train_dl, valid_dl, optimizer, lr_scheduler, epochs, warmup, log_writer: LOGWRITER):
+        
+class RestormerTrainer(BaseTrainerIR):
+    def train_model(self, model, train_dl, valid_dl, optimizer, lr_scheduler, epochs, warmup, log_writer: LOGWRITER):
         """
+        Train the Restormer model.
         """
         best_loss = float('inf')
-        criterion = MSE_Loss()
+        criterion = nn.MSELoss()
         criterion_psnr = PSNR(maximum_pixel_value=1.0)
         iteration = 0
 
         for epoch in range(epochs):
-            self.train()
+            model.train()
             total_tr_loss = 0.0
             for i, data in tqdm(enumerate(train_dl), desc=f"Training Epoch {epoch}/{epochs}"):
                 optimizer.zero_grad()
                 
                 clean_img, degra_img = data
                 
-                sr_img = self(degra_img)
+                sr_img = model(degra_img)
                 
                 mse_loss = criterion(clean_img, sr_img)
                 mse_loss.backward()
@@ -160,30 +162,31 @@ class Restormer(BaseModelIR):
                 iteration += 1
 
             avg_tr_loss = total_tr_loss / len(train_dl)
-            avg_vld_loss, avg_vld_psnr_loss = self.evaluate_model(valid_dl, criterion, criterion_psnr)
+            avg_vld_loss, avg_vld_psnr_loss = self.evaluate_model(model, valid_dl, criterion, criterion_psnr)
             
             log_writer.write(epoch=epoch + 1, tr_loss=avg_tr_loss, vld_loss=avg_vld_loss, vld_psnr=avg_vld_psnr_loss)
             
             if lr_scheduler and epoch > warmup:
                 lr_scheduler.step()
-                
+
             if best_loss > avg_vld_loss:
                 best_loss = avg_vld_loss
-                torch.save(self.state_dict(), os.path.join(configs.save_pth, f"Epoch {epoch + 1}_RESTORMER.pth"))
+                torch.save(model.state_dict(), os.path.join(configs.save_pth, f"Epoch_{epoch + 1}_RESTORMER.pth"))
 
             train_dl, valid_dl = self.update_dataloaders_based_on_iterations(train_dl, valid_dl, iteration)
 
-    def evaluate_model(self, valid_dl, criterion, criterion_psnr):
+    def evaluate_model(self, model, valid_dl, criterion, criterion_psnr):
         """
+        Evaluate the model.
         """
-        self.eval()
+        model.eval()
         total_vld_loss = 0.0
         total_vld_psnr_loss = 0.0
 
         with torch.no_grad():
-            for i, data in tqdm(enumerate(valid_dl)):
+            for i, data in tqdm(enumerate(valid_dl), desc="Validating Epoch"):
                 clean_img, degrad_img = data
-                sr_img = self(degrad_img)
+                sr_img = model(degrad_img)
                 mse_loss = criterion(clean_img, sr_img)
 
                 psnr_loss = criterion_psnr(clean_img, sr_img)
@@ -196,6 +199,7 @@ class Restormer(BaseModelIR):
 
     def update_dataloaders_based_on_iterations(self, train_dl, valid_dl, iteration):
         """
+        Update data loaders based on the number of iterations.
         """
         if iteration >= 276000:
             train_dl = load_dataset(384, 8, shuffle=True, mode="train")
@@ -213,7 +217,3 @@ class Restormer(BaseModelIR):
             train_dl = load_dataset(160, 40, shuffle=True, mode="train")
             valid_dl = load_dataset(160, 40, shuffle=True, mode="val")
         return train_dl, valid_dl
-        
-
-
-    

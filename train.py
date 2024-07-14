@@ -53,6 +53,7 @@ def main():
                             hidden_channels=model_config.get("hidden_channels"),
                             output_channels=model_config.get("output_channels"),
                             num_layers=model_config.get("num_layers"))
+        trainer = DnCNN.DnCNNTrainer()
         print("[INFO] DnCNN model loaded")
     
     if args.model_save_path:
@@ -90,13 +91,14 @@ def main():
 
     model.to(configs.device)
 
-    model.train_model(train_dl=train_dl, 
-                valid_dl=valid_dl, 
-                optimizer=optimizer, 
-                lr_scheduler=scheduler, 
-                epochs=model_config.get('epochs'), 
-                warmup=model_config.get('warmup'),
-                log_writer=logger)
+    trainer.train_model(model=model,
+                        train_dl=train_dl, 
+                        valid_dl=valid_dl, 
+                        optimizer=optimizer, 
+                        lr_scheduler=scheduler, 
+                        epochs=model_config.get('epochs'), 
+                        warmup=model_config.get('warmup'),
+                        log_writer=logger)
 
 if __name__ == "__main__":
     mp.set_start_method('spawn')
