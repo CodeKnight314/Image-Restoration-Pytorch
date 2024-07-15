@@ -10,8 +10,8 @@ class ImageDataset(Dataset):
     """
     """
     def __init__(self, clean_dir, degradation_dirs, patch_size, v_threshold, h_threshold, transforms=None): 
-        self.clean_dir = sorted(glob(os.path.join(clean_dir, "/*")))
-        self.degra_dir = sorted(glob(os.path.join(degradation_dirs, "/*")))
+        self.clean_dir = sorted(glob(os.path.join(clean_dir, "*")))
+        self.degra_dir = sorted(glob(os.path.join(degradation_dirs, "*")))
         self.patch_size = patch_size
         
         self.v_threshold = v_threshold 
